@@ -27,7 +27,7 @@ export function ResultScreen({ state }: Props) {
   };
 
   return (
-    <div className="result-screen">
+    <div className={`result-screen ${won ? "result-screen--won" : "result-screen--lost"}`}>
       <div className={`result-badge ${won ? "result-badge--won" : "result-badge--lost"}`}>
         {won ? "🟢 Correct!" : "🔴 Not quite"}
       </div>

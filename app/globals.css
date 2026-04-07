@@ -7,12 +7,15 @@
   --border: #2e3347;
   --accent: #6c63ff;
   --accent-hover: #7c74ff;
+  --accent-muted: color-mix(in srgb, var(--accent) 12%, transparent);
   --success: #22c55e;
+  --success-muted: color-mix(in srgb, var(--success) 10%, transparent);
   --error: #ef4444;
+  --error-muted: color-mix(in srgb, var(--error) 10%, transparent);
   --warning: #f59e0b;
   --text-primary: #f1f2f6;
   --text-secondary: #9499b0;
-  --text-muted: #555d7a;
+  --text-muted: #6b7190;
 }
 
 @theme inline {
@@ -37,7 +40,51 @@ body {
 ::-webkit-scrollbar-track { background: var(--background); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-/* Layout */
+/* ───────── Keyframes ───────── */
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hintReveal {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes latestPulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent); }
+  60%  { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+
+@keyframes resultEntrance {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes badgePop {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Reduced motion: kill all animations */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ───────── Layout ───────── */
+
 .page-shell {
   min-height: 100dvh;
   display: flex;
@@ -72,7 +119,8 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Game Board */
+/* ───────── Game Board ───────── */
+
 .game-board {
   width: 100%;
   max-width: 640px;
@@ -96,7 +144,8 @@ body {
   margin-bottom: 1rem;
 }
 
-/* Hints */
+/* ───────── Hints ───────── */
+
 .hints-list {
   display: flex;
   flex-direction: column;
@@ -115,16 +164,19 @@ body {
 
 .hint-card--locked {
   background: var(--surface);
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
 .hint-card--revealed {
   background: var(--surface);
+  animation: hintReveal 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .hint-card--latest {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  animation: hintReveal 0.32s cubic-bezier(0.22, 1, 0.36, 1) both,
+             latestPulse 0.7s ease-out 0.25s both;
 }
 
 .hint-number {
@@ -135,6 +187,7 @@ body {
   letter-spacing: 0.06em;
   padding-top: 2px;
   white-space: nowrap;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 .hint-locked-label {
@@ -150,7 +203,8 @@ body {
   margin: 0;
 }
 
-/* Game Actions */
+/* ───────── Game Actions ───────── */
+
 .game-actions {
   display: flex;
   flex-direction: column;
@@ -159,6 +213,7 @@ body {
 
 .reveal-btn {
   width: 100%;
+  min-height: 44px;
   padding: 0.75rem 1.25rem;
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -167,19 +222,34 @@ body {
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  letter-spacing: 0.01em;
 }
 
 .reveal-btn:hover {
   background: var(--surface);
   border-color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
-.reveal-btn:active { transform: scale(0.99); }
+.reveal-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.reveal-btn:active {
+  transform: scale(0.985);
+}
+
+.reveal-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
 
 .reveal-btn-cost {
   font-size: 0.75rem;
@@ -207,9 +277,11 @@ body {
   color: var(--text-muted);
   text-align: center;
   margin: 0;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Guess Input */
+/* ───────── Guess Input ───────── */
+
 .guess-input-wrapper {
   display: flex;
   flex-direction: column;
@@ -226,6 +298,7 @@ body {
 
 .guess-input {
   width: 100%;
+  min-height: 44px;
   padding: 0.75rem 1rem;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -233,19 +306,31 @@ body {
   color: var(--text-primary);
   font-size: 0.9rem;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .guess-input::placeholder { color: var(--text-muted); }
-.guess-input:focus { border-color: var(--accent); }
-.guess-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.guess-input:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--border) 60%, var(--accent));
+}
+
+.guess-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.guess-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 .guess-category-badge {
   position: absolute;
   right: 0.75rem;
   font-size: 0.7rem;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: var(--accent-muted);
   padding: 0.2rem 0.5rem;
   border-radius: 999px;
   pointer-events: none;
@@ -264,22 +349,28 @@ body {
   list-style: none;
   margin: 0;
   padding: 0.25rem;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.12s ease both;
 }
 
 .guess-option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.6rem 0.75rem;
+  padding: 0.65rem 0.75rem;
+  min-height: 44px;
   border-radius: 7px;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background 0.08s;
 }
 
-.guess-option:hover,
+.guess-option:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
+}
+
 .guess-option--active {
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-2));
+  outline: none;
 }
 
 .guess-option-label {
@@ -290,10 +381,13 @@ body {
 .guess-option-cat {
   font-size: 0.7rem;
   color: var(--text-muted);
+  margin-left: 0.5rem;
+  flex-shrink: 0;
 }
 
 .guess-submit-btn {
   width: 100%;
+  min-height: 44px;
   padding: 0.85rem 1.25rem;
   background: var(--accent);
   border: none;
@@ -302,15 +396,34 @@ body {
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s, opacity 0.15s;
+  transition: background 0.15s, transform 0.1s, opacity 0.15s, box-shadow 0.15s;
   letter-spacing: 0.01em;
 }
 
-.guess-submit-btn:hover:not(:disabled) { background: var(--accent-hover); }
-.guess-submit-btn:active:not(:disabled) { transform: scale(0.99); }
-.guess-submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.guess-submit-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 35%, transparent);
+}
 
-/* Result Screen */
+.guess-submit-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.guess-submit-btn:active:not(:disabled) {
+  transform: scale(0.985);
+  box-shadow: none;
+}
+
+.guess-submit-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ───────── Result Screen ───────── */
+
 .result-screen {
   display: flex;
   flex-direction: column;
@@ -319,12 +432,17 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
-  animation: slideUp 0.3s ease;
+  animation: resultEntrance 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+.result-screen--won {
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border));
+  background: color-mix(in srgb, var(--success) 4%, var(--surface));
+}
+
+.result-screen--lost {
+  border-color: color-mix(in srgb, var(--error) 25%, var(--border));
+  background: color-mix(in srgb, var(--error) 3%, var(--surface));
 }
 
 .result-badge {
@@ -335,16 +453,19 @@ body {
   display: inline-flex;
   align-self: flex-start;
   gap: 0.4rem;
+  animation: badgePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
 }
 
 .result-badge--won {
-  background: color-mix(in srgb, var(--success) 14%, transparent);
+  background: color-mix(in srgb, var(--success) 16%, transparent);
   color: var(--success);
+  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
 }
 
 .result-badge--lost {
-  background: color-mix(in srgb, var(--error) 14%, transparent);
+  background: color-mix(in srgb, var(--error) 16%, transparent);
   color: var(--error);
+  border: 1px solid color-mix(in srgb, var(--error) 30%, transparent);
 }
 
 .result-hints-used {
@@ -430,6 +551,7 @@ body {
 
 .share-btn {
   width: 100%;
+  min-height: 44px;
   padding: 0.75rem;
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -438,18 +560,43 @@ body {
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
 .share-btn:hover {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
-/* Mobile */
+.share-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.share-btn:active {
+  transform: scale(0.985);
+}
+
+/* ───────── Mobile ───────── */
+
 @media (max-width: 480px) {
-  .page-shell { padding: 1rem 0.875rem 3rem; }
+  .page-shell { padding: 1rem 0.875rem 5rem; }
   .logo { font-size: 1.2rem; }
   .hint-text { font-size: 0.85rem; }
   .game-board { gap: 1rem; }
+
+  /* Push submit button closer to thumb reach zone */
+  .guess-input-wrapper {
+    gap: 0.625rem;
+  }
+
+  .guess-submit-btn {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .reveal-btn {
+    min-height: 48px;
+  }
 }

@@ -20,7 +20,8 @@ export function HintCard({ hint, revealed, isLatest }: Props) {
 
   return (
     <div
-      className={`hint-card hint-card--revealed ${isLatest ? "hint-card--latest" : ""}`}
+      key={`hint-${hint.number}-revealed`}
+      className={`hint-card hint-card--revealed${isLatest ? " hint-card--latest" : ""}`}
     >
       <span className="hint-number">#{hint.number}</span>
       <p className="hint-text">{hint.text}</p>
