@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { getLocalPlayCount } from "@/lib/plays";
 
@@ -8,21 +8,21 @@ const DISMISSED_KEY = "debugdle_streak_prompt_dismissed";
 
 export function SaveStreakPrompt() {
   const { user } = useAuth();
-  const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(
+    () => typeof window !== "undefined" && !!localStorage.getItem(DISMISSED_KEY)
+  );
 
-  useEffect(() => {
-    if (user) return; // signed in, no need
-    const dismissed = localStorage.getItem(DISMISSED_KEY);
-    if (dismissed) return;
-    const count = getLocalPlayCount();
-    if (count >= 3) setVisible(true);
-  }, [user]);
+  const visible =
+    !user &&
+    !dismissed &&
+    typeof window !== "undefined" &&
+    getLocalPlayCount() >= 3;
 
   if (!visible) return null;
 
   const dismiss = () => {
     localStorage.setItem(DISMISSED_KEY, "1");
-    setVisible(false);
+    setDismissed(true);
   };
 
   return (
