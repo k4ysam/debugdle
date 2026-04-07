@@ -713,6 +713,40 @@
     }
 
     /* ================================================================
+       LIGHT MODE
+       warm paper — overrides dark tokens, accent unchanged
+       ================================================================ */
+    html.light {
+      --bg:         #f5f0e8;
+      --ink:        #1a1816;
+      --ink-muted:  #7a7570;
+      --ink-dim:    #b5afa5;
+      --border:     #d8d2c8;
+      --border-mid: #c5bfb4;
+      --surface:    #ede8df;
+      --wrong:      #b84028;
+    }
+
+    /* Submit btn text must always be dark since accent is light amber */
+    html.light .submit-btn { color: #1a1816; }
+
+    /* Theme toggle button */
+    .theme-btn {
+      width: 1.625rem;
+      height: 1.625rem;
+      border: 1px solid var(--border-mid);
+      color: var(--ink-muted);
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .theme-btn:hover      { border-color: var(--accent); color: var(--accent); }
+    .theme-btn:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+    /* ================================================================
        MOBILE
        ================================================================ */
     @media (max-width: 540px) {
@@ -743,7 +777,8 @@
     <div class="logo">debugdle<span class="cursor">_</span></div>
     <div class="header-right">
       <span class="streak">🔥 4</span>
-      <button class="help-btn" id="help-btn" aria-label="How to play" aria-haspopup="dialog">?</button>
+      <button class="theme-btn" id="theme-btn" aria-label="Toggle light/dark mode">☀</button>
+      <button class="help-btn"  id="help-btn"  aria-label="How to play" aria-haspopup="dialog">?</button>
     </div>
   </header>
   <hr class="header-rule">
@@ -932,8 +967,8 @@ const BUG_TYPES = [
 
 const state = {
   hintsRevealed: 1,
-  pendingGuess:  null,   // { key, label } | null
-  submitted:     false,
+  pendingGuess:  null,    // { key, label } | null
+  guesses:       [],      // { key, label }[] — all wrong guesses so far
   status:        'playing', // 'playing' | 'won' | 'lost'
 };
 
@@ -1037,24 +1072,23 @@ function clearPending() {
 /* ── BUTTON STATE ────────────────────────────────────────── */
 
 function updateRevealBtn() {
-  const canReveal = state.hintsRevealed < 6 && !state.submitted;
+  const gameOver  = state.status !== 'playing';
+  const canReveal = state.hintsRevealed < 6 && !gameOver;
   revealBtn.disabled = !canReveal;
 
-  if (state.submitted || state.hintsRevealed >= 6) {
-    revealBtn.textContent = 'all hints revealed';
-  } else {
-    revealBtn.textContent = `reveal hint ${state.hintsRevealed + 1} →`;
-  }
+  revealBtn.textContent = (gameOver || state.hintsRevealed >= 6)
+    ? 'all hints revealed'
+    : `reveal hint ${state.hintsRevealed + 1} →`;
 }
 
 function updateSubmitBtn() {
-  submitBtn.disabled = !state.pendingGuess || state.submitted;
+  submitBtn.disabled = !state.pendingGuess || state.status !== 'playing';
 }
 
 /* ── REVEAL ──────────────────────────────────────────────── */
 
 revealBtn.addEventListener('click', () => {
-  if (state.hintsRevealed >= 6 || state.submitted) return;
+  if (state.hintsRevealed >= 6 || state.status !== 'playing') return;
   state.hintsRevealed++;
   renderHints(state.hintsRevealed);
   updateRevealBtn();
@@ -1065,20 +1099,59 @@ revealBtn.addEventListener('click', () => {
 submitBtn.addEventListener('click', handleSubmit);
 
 function handleSubmit() {
-  if (!state.pendingGuess || state.submitted) return;
+  if (!state.pendingGuess || state.status !== 'playing') return;
 
-  state.submitted = true;
-  state.status = state.pendingGuess.key === SCENARIO.bugKey ? 'won' : 'lost';
+  const guess   = state.pendingGuess;
+  const correct = guess.key === SCENARIO.bugKey;
 
-  /* Fade out input area, then show result */
+  /* Clear the pending chip and input */
+  state.pendingGuess = null;
+  renderPendingChip();
+  searchInput.value = '';
+  closeDropdown();
+
+  if (correct) {
+    /* ── WIN: end game immediately ── */
+    state.status = 'won';
+    endGame();
+
+  } else if (state.hintsRevealed >= 6) {
+    /* ── LOSE: used all hints, still wrong ── */
+    state.guesses.push(guess);
+    state.status = 'lost';
+    renderGuessHistory();
+    endGame();
+
+  } else {
+    /* ── WRONG but hints remain: record, auto-reveal next hint ── */
+    state.guesses.push(guess);
+    state.hintsRevealed++;
+    renderHints(state.hintsRevealed);
+    renderGuessHistory();
+    updateRevealBtn();
+    updateSubmitBtn();
+    showToast(`not quite — hint ${state.hintsRevealed} revealed`);
+  }
+}
+
+function endGame() {
+  updateRevealBtn();
+  updateSubmitBtn();
   inputArea.classList.add('fading-out');
   inputArea.addEventListener('animationend', () => {
     inputArea.style.display = 'none';
     showResult();
   }, { once: true });
+}
 
-  updateRevealBtn();
-  updateSubmitBtn();
+function renderGuessHistory() {
+  guessHistory.innerHTML = '';
+  state.guesses.forEach((g, i) => {
+    const li = document.createElement('li');
+    li.className = 'guess-history-item';
+    li.innerHTML = `<span class="guess-num">${i + 1}.</span><span>${escHtml(g.label)}</span>`;
+    guessHistory.appendChild(li);
+  });
 }
 
 /* ── RESULT ──────────────────────────────────────────────── */
@@ -1328,6 +1401,26 @@ function escHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+/* ── THEME TOGGLE ────────────────────────────────────────── */
+
+const themeBtn  = el('theme-btn');
+const htmlEl    = document.documentElement;
+
+function applyTheme(light) {
+  htmlEl.classList.toggle('light', light);
+  themeBtn.textContent  = light ? '☾' : '☀';
+  themeBtn.setAttribute('aria-label', light ? 'Switch to dark mode' : 'Switch to light mode');
+}
+
+/* Restore saved preference */
+applyTheme(localStorage.getItem('theme') === 'light');
+
+themeBtn.addEventListener('click', () => {
+  const nowLight = !htmlEl.classList.contains('light');
+  applyTheme(nowLight);
+  localStorage.setItem('theme', nowLight ? 'light' : 'dark');
+});
 
 /* ── BOOT ────────────────────────────────────────────────── */
 
