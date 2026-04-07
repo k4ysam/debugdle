@@ -1,23 +1,35 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AuthMenu } from "./AuthMenu";
+import { LeftSidebar } from "./LeftSidebar";
+import { SidebarShell } from "./SidebarShell";
 import { useStreak } from "@/hooks/useStreak";
 
 export function Header() {
-  const [isLight, setIsLight] = useState(false);
-  const [htpOpen, setHtpOpen] = useState(false);
+  const [isLight, setIsLight] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("theme") === "light"
+  );
+  const [activeSidebar, setActiveSidebar] = useState<"left" | "help" | null>(null);
   const streak = useStreak();
 
-  // Apply saved theme on mount
   useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    const light = saved === "light";
-    setIsLight(light);
-    if (light) document.documentElement.classList.add("light");
-    // Enable transitions after first render
+    document.documentElement.classList.toggle("light", isLight);
     setTimeout(() => document.documentElement.classList.remove("no-transition"), 50);
-  }, []);
+  }, [isLight]);
+
+  useEffect(() => {
+    if (!activeSidebar) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setActiveSidebar(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeSidebar]);
 
   const toggleTheme = () => {
     const next = !isLight;
@@ -26,13 +38,32 @@ export function Header() {
     localStorage.setItem("theme", next ? "light" : "dark");
   };
 
-  const openHtp = () => setHtpOpen(true);
-  const closeHtp = () => setHtpOpen(false);
+  const closeSidebar = () => setActiveSidebar(null);
+  const toggleSidebar = (side: "left" | "help") => {
+    setActiveSidebar((current) => (current === side ? null : side));
+  };
 
   return (
     <>
       <header className="site-header">
-        <div className="logo">debugdle<span className="cursor">_</span></div>
+        <div className="header-left">
+          <button
+            className="menu-btn"
+            onClick={() => toggleSidebar("left")}
+            aria-label="Open menu"
+            aria-expanded={activeSidebar === "left"}
+            aria-controls="main-menu"
+            type="button"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+          <div className="logo">
+            debugdle<span className="cursor">_</span>
+          </div>
+        </div>
+
         <div className="header-right">
           {streak > 0 && (
             <span className="streak" title="Current streak">
@@ -43,44 +74,43 @@ export function Header() {
           <button
             className="theme-btn"
             onClick={toggleTheme}
-            aria-label="Toggle light/dark mode"
+            aria-label="Toggle light or dark mode"
+            type="button"
           >
-            {isLight ? "☾" : "☀"}
+            <span suppressHydrationWarning>{isLight ? "dk" : "lt"}</span>
           </button>
           <button
             className="help-btn"
-            onClick={openHtp}
+            onClick={() => toggleSidebar("help")}
             aria-label="How to play"
-            aria-haspopup="dialog"
+            aria-expanded={activeSidebar === "help"}
+            aria-controls="how-to-play"
+            type="button"
           >
-            ?
+            i
           </button>
         </div>
       </header>
       <hr className="header-rule" />
 
-      {/* How to play overlay */}
-      <aside
+      <LeftSidebar open={activeSidebar === "left"} onClose={closeSidebar} />
+
+      <SidebarShell
         id="how-to-play"
-        role="dialog"
-        aria-modal="true"
-        aria-label="How to play"
-        tabIndex={-1}
-        className={htpOpen ? "open" : ""}
+        side="right"
+        open={activeSidebar === "help"}
+        onClose={closeSidebar}
+        eyebrow="reference rail"
+        title="how to play"
       >
-        <div className="htp-header">
-          <span className="htp-title">how to play</span>
-          <button className="htp-close" onClick={closeHtp}>✕ close</button>
-        </div>
         <div className="htp-steps">
           <div className="htp-step">
             <span className="htp-num">1</span>
             <div>
               <p className="htp-step-title">Read the hints</p>
               <p className="htp-step-desc">
-                Each puzzle reveals up to 6 hints, one at a time.
-                Every hint narrows down the type of bug. You can reveal
-                as many as you need before guessing.
+                Each puzzle reveals up to 6 hints, one at a time. Every hint narrows
+                the bug category before you commit to a guess.
               </p>
             </div>
           </div>
@@ -89,8 +119,8 @@ export function Header() {
             <div>
               <p className="htp-step-title">Search for a bug type</p>
               <p className="htp-step-desc">
-                Type in the search field to filter through 100+ canonical
-                bug categories. Use arrow keys to navigate, Enter to select.
+                Use the input to filter canonical bug categories. Arrow keys move
+                through results and Enter confirms the selection.
               </p>
             </div>
           </div>
@@ -99,13 +129,13 @@ export function Header() {
             <div>
               <p className="htp-step-title">Submit when confident</p>
               <p className="htp-step-desc">
-                Wrong guesses auto-reveal the next hint. Fewer hints used = better score.
-                A new puzzle drops every day at midnight.
+                Wrong guesses reveal the next hint automatically. Fewer hints used
+                means a better solve, and a fresh puzzle arrives daily.
               </p>
             </div>
           </div>
         </div>
-      </aside>
+      </SidebarShell>
     </>
   );
 }
