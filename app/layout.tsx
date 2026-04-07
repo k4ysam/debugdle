@@ -27,6 +27,7 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from "@/components/AuthProvider";
+import { AuthPanelProvider } from "@/context/AuthPanelContext";
 
 export default function RootLayout({
   children,
@@ -39,7 +40,11 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${spaceMono.variable} no-transition`}
     >
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <AuthPanelProvider>
+            {children}
+          </AuthPanelProvider>
+        </AuthProvider>
       </body>
     </html>
   );
