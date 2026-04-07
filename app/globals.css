@@ -176,6 +176,18 @@ ul, ol { list-style: none; padding: 0; margin: 0; }
   gap: 0.1875rem;
 }
 
+.theme-btn {
+  width: 1ch;
+  justify-content: center;
+}
+
+.theme-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1ch;
+}
+
 .menu-btn span {
   width: 0.75rem;
   height: 1px;
