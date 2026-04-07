@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import { SidebarShell } from "./SidebarShell";
+import { UserPanel } from "./UserPanel";
 
 type LeftSidebarProps = {
   open: boolean;
   onClose: () => void;
+  isLight: boolean;
+  toggleTheme: () => void;
 };
 
 type SidebarTab = "help" | "changelog" | "about";
 
-export function LeftSidebar({ open, onClose }: LeftSidebarProps) {
+export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebarProps) {
   const [activeTab, setActiveTab] = useState<SidebarTab>("help");
 
   return (
@@ -21,44 +24,38 @@ export function LeftSidebar({ open, onClose }: LeftSidebarProps) {
       onClose={onClose}
       eyebrow="utility rail"
       title="menu"
-      footer={
-        <div className="sidebar-user">
-          <p className="sidebar-user-label">debugdle</p>
-          <p className="sidebar-user-name">daily debugging puzzle</p>
-        </div>
-      }
+      footer={<UserPanel />}
     >
-      <div className="sidebar-tabs" role="tablist" aria-label="Menu sections">
+      {/* Theme toggle */}
+      <div className="sidebar-theme-row">
+        <span className="sidebar-theme-label">appearance</span>
         <button
-          className={`sidebar-tab ${activeTab === "help" ? "active" : ""}`}
-          onClick={() => setActiveTab("help")}
-          role="tab"
-          aria-selected={activeTab === "help"}
+          className="sidebar-theme-btn"
+          onClick={toggleTheme}
+          aria-label="Toggle light or dark mode"
           type="button"
         >
-          help
-        </button>
-        <button
-          className={`sidebar-tab ${activeTab === "changelog" ? "active" : ""}`}
-          onClick={() => setActiveTab("changelog")}
-          role="tab"
-          aria-selected={activeTab === "changelog"}
-          type="button"
-        >
-          changelog
-        </button>
-        <button
-          className={`sidebar-tab ${activeTab === "about" ? "active" : ""}`}
-          onClick={() => setActiveTab("about")}
-          role="tab"
-          aria-selected={activeTab === "about"}
-          type="button"
-        >
-          about
+          <span suppressHydrationWarning>{isLight ? "☾ dark" : "☀ light"}</span>
         </button>
       </div>
 
-      {activeTab === "help" ? (
+      {/* Nav tabs */}
+      <div className="sidebar-tabs" role="tablist" aria-label="Menu sections">
+        {(["help", "changelog", "about"] as SidebarTab[]).map((tab) => (
+          <button
+            key={tab}
+            className={`sidebar-tab${activeTab === tab ? " active" : ""}`}
+            onClick={() => setActiveTab(tab)}
+            role="tab"
+            aria-selected={activeTab === tab}
+            type="button"
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "help" && (
         <div className="htp-steps">
           <div className="htp-step">
             <span className="htp-num">1</span>
@@ -91,9 +88,9 @@ export function LeftSidebar({ open, onClose }: LeftSidebarProps) {
             </div>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {activeTab === "changelog" ? (
+      {activeTab === "changelog" && (
         <section className="sidebar-section">
           <p className="sidebar-section-label">changelog</p>
           <p className="sidebar-section-copy">
@@ -101,9 +98,9 @@ export function LeftSidebar({ open, onClose }: LeftSidebarProps) {
             in one place without splitting attention across both sides of the page.
           </p>
         </section>
-      ) : null}
+      )}
 
-      {activeTab === "about" ? (
+      {activeTab === "about" && (
         <section className="sidebar-section">
           <p className="sidebar-section-label">about</p>
           <p className="sidebar-section-copy">
@@ -111,7 +108,7 @@ export function LeftSidebar({ open, onClose }: LeftSidebarProps) {
             the failure mode, and commit to a guess before the final hint.
           </p>
         </section>
-      ) : null}
+      )}
     </SidebarShell>
   );
 }
