@@ -24,9 +24,9 @@
   --row-h:         56px;
   --max-w:         680px;
   --pad-h:         clamp(1.25rem, 5vw, 3.5rem);
-  --rail-w:        min(32rem, 33vw);
+  --rail-w:        clamp(20rem, 28vw, 27rem);
   --rail-bg:       color-mix(in oklab, var(--surface) 92%, var(--bg));
-  --rail-shadow:   0 0 0 1px var(--border), 0 24px 60px rgb(0 0 0 / 0.28);
+  --rail-shadow:   0 0 0 1px var(--border), 0 20px 48px rgb(0 0 0 / 0.24);
 }
 
 /* ================================================================
@@ -570,14 +570,14 @@ ul, ol { list-style: none; padding: 0; margin: 0; }
    ================================================================ */
 .sidebar-rail {
   position: fixed;
-  top: 0.75rem;
-  bottom: 0.75rem;
+  top: 0;
+  bottom: 0;
   width: var(--rail-w);
-  max-width: calc(100vw - 1.5rem);
+  max-width: min(33vw, 27rem);
   background:
     linear-gradient(180deg, color-mix(in oklab, var(--accent) 10%, transparent), transparent 22%),
     var(--rail-bg);
-  border: 1px solid var(--border-mid);
+  border: 0;
   box-shadow: var(--rail-shadow);
   z-index: 260;
   overflow-y: auto;
@@ -587,13 +587,15 @@ ul, ol { list-style: none; padding: 0; margin: 0; }
 }
 
 .sidebar-rail-left {
-  left: 0.75rem;
-  transform: translateX(calc(-100% - 1rem));
+  left: 0;
+  border-right: 1px solid var(--border-mid);
+  transform: translateX(-100%);
 }
 
 .sidebar-rail-right {
-  right: 0.75rem;
-  transform: translateX(calc(100% + 1rem));
+  right: 0;
+  border-left: 1px solid var(--border-mid);
+  transform: translateX(100%);
 }
 
 .sidebar-rail.open {
@@ -606,7 +608,7 @@ ul, ol { list-style: none; padding: 0; margin: 0; }
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 1.25rem 1.25rem 1.5rem;
+  padding: 4.75rem 1.35rem 1.5rem;
 }
 
 .sidebar-rail-header {
@@ -711,7 +713,7 @@ ul, ol { list-style: none; padding: 0; margin: 0; }
 }
 
 .htp-steps {
-  max-width: 26rem;
+  max-width: none;
 }
 
 .htp-step {
@@ -805,7 +807,7 @@ html.light .submit-btn { color: #1a1816; }
 @media (max-width: 540px) {
   :root {
     --pad-h: 1.25rem;
-    --rail-w: min(88vw, 24rem);
+    --rail-w: min(86vw, 22rem);
   }
 
   .site-header {
@@ -835,15 +837,11 @@ html.light .submit-btn { color: #1a1816; }
   .submit-btn { padding: 0.5rem 1rem; }
   .result-answer { font-size: 1rem; }
   .sidebar-rail {
-    top: 0.5rem;
-    bottom: 0.5rem;
+    max-width: min(86vw, 22rem);
   }
 
-  .sidebar-rail-left { left: 0.5rem; }
-  .sidebar-rail-right { right: 0.5rem; }
-
   .sidebar-rail-inner {
-    padding: 1rem 1rem 1.25rem;
+    padding: 4.25rem 1rem 1.25rem;
   }
 
   .htp-step {
