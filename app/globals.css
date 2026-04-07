@@ -24,7 +24,7 @@
   --row-h:         56px;
   --max-w:         680px;
   --pad-h:         clamp(1.25rem, 5vw, 3.5rem);
-  --rail-w:        clamp(20rem, 28vw, 27rem);
+  --rail-w:        min(24vw, 20rem);
   --rail-bg:       color-mix(in oklab, var(--surface) 92%, var(--bg));
   --rail-shadow:   0 0 0 1px var(--border), 0 20px 48px rgb(0 0 0 / 0.24);
 }
@@ -573,7 +573,7 @@ ul, ol { list-style: none; padding: 0; margin: 0; }
   top: 0;
   bottom: 0;
   width: var(--rail-w);
-  max-width: min(33vw, 27rem);
+  max-width: min(24vw, 20rem);
   background:
     linear-gradient(180deg, color-mix(in oklab, var(--accent) 10%, transparent), transparent 22%),
     var(--rail-bg);
