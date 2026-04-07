@@ -116,19 +116,16 @@
     }
 
     /* ================================================================
-       LAYOUT SHELL
-       editorial asymmetry: content hugs left half of wide viewports
+       LAYOUT SHELL — centered, max 680px
        ================================================================ */
     #app {
-      max-width: 1120px;
+      max-width: var(--max-w);
       margin: 0 auto;
       padding: 0 var(--pad-h);
     }
 
-    /* Content column — max 680px, left-biased */
-    .col {
-      max-width: var(--max-w);
-    }
+    /* .col is now a no-op — #app already constrains width */
+    .col { width: 100%; }
 
     /* ================================================================
        HEADER
@@ -138,7 +135,6 @@
       align-items: baseline;
       justify-content: space-between;
       padding: 2rem 0 0.875rem;
-      max-width: var(--max-w);
     }
 
     .logo {
@@ -499,7 +495,6 @@
        RESULT AREA
        ================================================================ */
     #result-area {
-      max-width: var(--max-w);
       margin-bottom: 3.5rem;
       display: none;
     }
@@ -687,6 +682,90 @@
     }
 
     /* ================================================================
+       WIN POP — full-screen momentary celebration
+       editorial: monospace label + giant amber count, raw border
+       ================================================================ */
+    #win-pop {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      z-index: 150;
+      opacity: 0;
+      transform: scale(0.97);
+      transition: opacity 0.22s ease-out, transform 0.22s ease-out, background-color 0.28s ease;
+      pointer-events: none;
+    }
+
+    #win-pop.show {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+
+    #win-pop.hide {
+      opacity: 0;
+      transform: scale(1.02);
+      transition: opacity 0.3s ease-in, transform 0.3s ease-in;
+    }
+
+    .win-pop-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--ink-muted);
+      margin-bottom: 1rem;
+    }
+
+    .win-pop-count {
+      font-family: var(--font-mono);
+      font-size: clamp(2.75rem, 9vw, 4.5rem);
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.25rem;
+    }
+
+    /* Reduced motion: skip pop, go straight to result */
+    @media (prefers-reduced-motion: reduce) {
+      #win-pop { display: none !important; }
+    }
+
+    /* ================================================================
+       RESULT — wrong guess block (loss state only)
+       ================================================================ */
+    .result-wrong-block {
+      border-left: 3px solid var(--wrong);
+      padding: 0.625rem 1rem;
+      margin-bottom: 1.25rem;
+      display: none;
+    }
+
+    .result-wrong-block.visible { display: block; }
+
+    .result-wrong-label {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--wrong);
+      opacity: 0.7;
+      margin-bottom: 0.3125rem;
+    }
+
+    .result-wrong-answer {
+      font-family: var(--font-mono);
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--wrong);
+    }
+
+    /* ================================================================
        TOAST — slides up from bottom
        ================================================================ */
     #toast {
@@ -711,6 +790,24 @@
       transform: translateX(-50%) translateY(0);
       opacity: 1;
     }
+
+    /* ================================================================
+       THEME TRANSITIONS
+       only active after first render (no-transition guard in JS)
+       ================================================================ */
+    html:not(.no-transition) body,
+    html:not(.no-transition) #app         { transition: background-color 0.28s ease, color 0.28s ease; }
+    html:not(.no-transition) .hint-row,
+    html:not(.no-transition) .hint-panel,
+    html:not(.no-transition) .search-input,
+    html:not(.no-transition) .dropdown,
+    html:not(.no-transition) .header-rule,
+    html:not(.no-transition) .scenario-title,
+    html:not(.no-transition) .scenario-label,
+    html:not(.no-transition) .result-outcome,
+    html:not(.no-transition) .result-explanation,
+    html:not(.no-transition) #how-to-play,
+    html:not(.no-transition) #toast        { transition: background-color 0.28s ease, color 0.28s ease, border-color 0.28s ease; }
 
     /* ================================================================
        LIGHT MODE
@@ -823,9 +920,16 @@
 
     <!-- Result area (shown after submit) -->
     <section id="result-area" aria-live="polite" aria-label="Result">
-      <p  class="result-outcome"      id="result-outcome"></p>
-      <p  class="result-answer-label">the bug was</p>
-      <p  class="result-answer"       id="result-answer"></p>
+      <p class="result-outcome" id="result-outcome"></p>
+
+      <!-- Wrong guess block — only shown on loss -->
+      <div class="result-wrong-block" id="result-wrong-block">
+        <p class="result-wrong-label">your guess</p>
+        <p class="result-wrong-answer" id="result-wrong-answer"></p>
+      </div>
+
+      <p class="result-answer-label" id="result-correct-label">the bug was</p>
+      <p class="result-answer correct" id="result-answer"></p>
       <hr class="result-divider">
       <div class="result-explanation" id="result-explanation"></div>
       <div class="result-actions">
@@ -883,6 +987,12 @@
   </div>
 </aside>
 
+
+<!-- ── WIN POP ── -->
+<div id="win-pop" hidden aria-live="assertive" aria-atomic="true">
+  <p class="win-pop-eyebrow">debugged today</p>
+  <p class="win-pop-count" id="win-pop-count">1 guess</p>
+</div>
 
 <!-- ── TOAST ── -->
 <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -995,6 +1105,11 @@ const helpBtn         = el('help-btn');
 const howToPlay       = el('how-to-play');
 const htpClose        = el('htp-close');
 const toastEl         = el('toast');
+const winPop          = el('win-pop');
+const winPopCount     = el('win-pop-count');
+const resultWrongBlock  = el('result-wrong-block');
+const resultWrongAnswer = el('result-wrong-answer');
+const resultCorrectLabel = el('result-correct-label');
 
 /* Dropdown state */
 let ddItems      = [];  // filtered BugType[]
@@ -1140,7 +1255,11 @@ function endGame() {
   inputArea.classList.add('fading-out');
   inputArea.addEventListener('animationend', () => {
     inputArea.style.display = 'none';
-    showResult();
+    if (state.status === 'won') {
+      showWinPop(() => showResult());
+    } else {
+      showResult();
+    }
   }, { once: true });
 }
 
@@ -1154,21 +1273,55 @@ function renderGuessHistory() {
   });
 }
 
+/* ── WIN POP ─────────────────────────────────────────────── */
+
+function showWinPop(onDone) {
+  const total = state.guesses.length + 1; // wrong guesses + the winning one
+  winPopCount.textContent = `${total} ${total === 1 ? 'guess' : 'guesses'}`;
+
+  winPop.hidden = false;
+
+  /* Trigger entrance on next two frames to allow display to take effect */
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    winPop.classList.add('show');
+  }));
+
+  /* Hold for 2.2s then fade out and call onDone */
+  setTimeout(() => {
+    winPop.classList.add('hide');
+    winPop.addEventListener('transitionend', () => {
+      winPop.hidden = true;
+      winPop.classList.remove('show', 'hide');
+      onDone();
+    }, { once: true });
+  }, 2200);
+}
+
 /* ── RESULT ──────────────────────────────────────────────── */
 
 function showResult() {
-  const won        = state.status === 'won';
-  const hintsUsed  = state.hintsRevealed;
+  const won       = state.status === 'won';
+  const hintsUsed = state.hintsRevealed;
+  const totalGuesses = state.guesses.length + (won ? 1 : 0);
 
   /* Outcome line */
   resultOutcome.textContent = won
     ? `diagnosed in ${hintsUsed} hint${hintsUsed === 1 ? '' : 's'}.`
-    : `missed. the bug was:`;
+    : `missed after ${totalGuesses} guess${totalGuesses === 1 ? '' : 'es'}.`;
 
-  /* Answer — typewriter animation */
-  resultAnswer.className = `result-answer ${won ? 'correct' : 'wrong'}`;
+  /* Loss: show the user's last wrong guess */
+  if (!won && state.guesses.length > 0) {
+    const lastWrong = state.guesses[state.guesses.length - 1];
+    resultWrongAnswer.textContent = lastWrong.label;
+    resultWrongBlock.classList.add('visible');
+    resultCorrectLabel.textContent = 'the correct answer';
+  } else {
+    resultCorrectLabel.textContent = 'the bug was';
+  }
+
+  /* Correct answer — always amber, typewriter in */
+  resultAnswer.className = 'result-answer correct';
   typewriter(resultAnswer, SCENARIO.bugLabel, 20, () => {
-    /* Explanation paragraphs appear after typewriter completes */
     resultExpl.innerHTML = SCENARIO.explanation
       .map(p => `<p>${escHtml(p)}</p>`)
       .join('');
@@ -1180,7 +1333,7 @@ function showResult() {
   /* Wire copy button */
   copyBtn.addEventListener('click', handleCopy, { once: true });
 
-  /* Start countdown */
+  /* Live countdown to next puzzle */
   startCountdown();
 }
 
@@ -1413,8 +1566,12 @@ function applyTheme(light) {
   themeBtn.setAttribute('aria-label', light ? 'Switch to dark mode' : 'Switch to light mode');
 }
 
-/* Restore saved preference */
+/* Block transitions on initial load so saved theme applies instantly */
+htmlEl.classList.add('no-transition');
 applyTheme(localStorage.getItem('theme') === 'light');
+requestAnimationFrame(() => requestAnimationFrame(() => {
+  htmlEl.classList.remove('no-transition');
+}));
 
 themeBtn.addEventListener('click', () => {
   const nowLight = !htmlEl.classList.contains('light');
