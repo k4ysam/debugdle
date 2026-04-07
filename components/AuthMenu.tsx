@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -14,28 +14,46 @@ export function AuthMenu() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const supabase = createClient();
 
+  // Show error if redirected back from a failed OAuth attempt
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("auth_error")) {
+      setOpen(true);
+      setError("Google sign-in failed. Check that Google is enabled in the Supabase dashboard and the redirect URI is set correctly in Google Cloud Console.");
+      const url = new URL(window.location.href);
+      url.searchParams.delete("auth_error");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, []);
+
   const reset = () => {
-    setEmail(""); setPassword(""); setDisplayName(""); setError("");
+    setEmail(""); setPassword(""); setDisplayName(""); setError(""); setInfo("");
   };
 
   const handleGoogle = async () => {
     setLoading(true);
+    setError("");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) setError(error.message);
-    setLoading(false);
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    }
+    // Don't setLoading(false) on success — browser is redirecting
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setInfo("");
     setLoading(true);
 
     if (mode === "signin") {
@@ -43,13 +61,25 @@ export function AuthMenu() {
       if (error) setError(error.message);
       else { setOpen(false); reset(); }
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { error, data } = await supabase.auth.signUp({
         email,
         password,
         options: { data: { display_name: displayName || email.split("@")[0] } },
       });
-      if (error) setError(error.message);
-      else { setOpen(false); reset(); }
+      if (error) {
+        if (error.message.toLowerCase().includes("rate limit")) {
+          setError("Email rate limit hit. Use Google sign-in instead, or try again later.");
+        } else {
+          setError(error.message);
+        }
+      } else if (data.session) {
+        // Email confirmation disabled — signed in immediately
+        setOpen(false); reset();
+      } else {
+        // Email confirmation required
+        setInfo("Check your inbox to confirm your email, then sign in.");
+        setPassword("");
+      }
     }
 
     setLoading(false);
@@ -135,6 +165,7 @@ export function AuthMenu() {
             />
 
             {error && <p className="auth-error">{error}</p>}
+            {info && <p className="auth-info">{info}</p>}
 
             <button className="auth-submit-btn" type="submit" disabled={loading}>
               {loading ? "…" : mode === "signin" ? "sign in" : "create account"}

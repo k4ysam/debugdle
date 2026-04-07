@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { AuthMenu } from "./AuthMenu";
 import { LeftSidebar } from "./LeftSidebar";
 import { useStreak } from "@/hooks/useStreak";
+import { useAuth } from "@/components/AuthProvider";
 
 export function Header() {
   const [isLight, setIsLight] = useState(
@@ -11,6 +13,7 @@ export function Header() {
   );
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const streak = useStreak();
+  const { user } = useAuth();
 
   useEffect(() => {
     document.documentElement.classList.toggle("light", isLight);
@@ -65,6 +68,9 @@ export function Header() {
         </div>
 
         <div className="header-right">
+          {user && (
+            <Link href="/archive" className="archive-link">history</Link>
+          )}
           {streak > 0 && (
             <span className="streak" title="Current streak">
               streak {streak}

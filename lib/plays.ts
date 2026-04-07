@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { PLAY_RECORDED_EVENT } from "@/hooks/useStreak";
 
 export interface PlayRecord {
   played_date: string; // YYYY-MM-DD (user's local date)
@@ -62,6 +63,7 @@ export async function recordPlay(
     // Anonymous: store in localStorage, replacing any existing entry for today
     const plays = getLocalPlays().filter((p) => p.played_date !== played_date);
     saveLocalPlays([...plays, record]);
+    window.dispatchEvent(new CustomEvent(PLAY_RECORDED_EVENT));
     return;
   }
 
@@ -76,6 +78,7 @@ export async function recordPlay(
     },
     { onConflict: "user_id,played_date", ignoreDuplicates: true }
   );
+  window.dispatchEvent(new CustomEvent(PLAY_RECORDED_EVENT));
 }
 
 export async function getUserPlays(
