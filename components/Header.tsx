@@ -56,6 +56,9 @@ export function Header() {
             <span />
             <span />
           </button>
+        </div>
+
+        <div className="header-center">
           <div className="logo">
             debugdle<span className="cursor">_</span>
           </div>
