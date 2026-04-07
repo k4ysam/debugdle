@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>debugdle</title>
+  <meta name="description" content="A daily developer puzzle. Six hints. One bug. Can you diagnose it?">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ================================================================
+       DESIGN TOKENS
+       ================================================================ */
+    :root {
+      --bg:            #0e0e0e;
+      --ink:           #e8e4da;
+      --ink-muted:     #6b6760;
+      --ink-dim:       #3a3835;
+      --border:        #212020;
+      --border-mid:    #2e2c2b;
+      --surface:       #141312;
+
+      /* Electric amber — oklch(78% 0.18 75) */
+      --accent:        oklch(78% 0.18 75);
+      --accent-dim:    oklch(78% 0.18 75 / 0.12);
+      /* Fallback for older browsers */
+      --accent-hex:    #e9a716;
+
+      --wrong:         #c0553a;
+
+      --font-ui:       'Space Grotesk', system-ui, sans-serif;
+      --font-mono:     'Space Mono', 'Courier New', monospace;
+
+      --row-h:         56px;
+      --max-w:         680px;
+      --pad-h:         clamp(1.25rem, 5vw, 3.5rem);
+    }
+
+    /* ================================================================
+       RESET
+       ================================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-ui);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100dvh;
+    }
+
+    button { cursor: pointer; font-family: inherit; background: none; border: none; }
+    input  { font-family: inherit; }
+    ul     { list-style: none; }
+
+    /* ================================================================
+       KEYFRAMES
+       ================================================================ */
+
+    /* Blinking cursor */
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    /* Hint reveal — clip-path wipe left-to-right */
+    @keyframes wipeIn {
+      from { clip-path: inset(0 100% 0 0); }
+      to   { clip-path: inset(0 0%   0 0); }
+    }
+
+    /* Text fades in after wipe */
+    @keyframes fadeInText {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    /* Result entrance */
+    @keyframes crossfadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0);   }
+    }
+
+    /* Input area fade out on submit */
+    @keyframes crossfadeOut {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+
+    /* How-to-play slide in from right — defined on element via transition */
+
+    /* Toast slide up */
+    @keyframes toastIn {
+      from { transform: translateX(-50%) translateY(140%); opacity: 0; }
+      to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+    }
+
+    /* Dropdown fade */
+    @keyframes dropIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    /* Reduce motion — kill everything */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration:        0.01ms !important;
+        animation-iteration-count: 1      !important;
+        transition-duration:       0.01ms !important;
+      }
+    }
+
+    /* ================================================================
+       LAYOUT SHELL
+       editorial asymmetry: content hugs left half of wide viewports
+       ================================================================ */
+    #app {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 var(--pad-h);
+    }
+
+    /* Content column — max 680px, left-biased */
+    .col {
+      max-width: var(--max-w);
+    }
+
+    /* ================================================================
+       HEADER
+       ================================================================ */
+    .site-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 2rem 0 0.875rem;
+      max-width: var(--max-w);
+    }
+
+    .logo {
+      font-family: var(--font-ui);
+      font-size: 1.0625rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: var(--ink);
+      text-transform: lowercase;
+      user-select: none;
+    }
+
+    .cursor {
+      display: inline-block;
+      color: var(--accent);
+      animation: blink 1s step-end infinite;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .streak {
+      font-size: 0.8125rem;
+      color: var(--ink-muted);
+      font-family: var(--font-mono);
+    }
+
+    .help-btn {
+      width: 1.625rem;
+      height: 1.625rem;
+      border: 1px solid var(--border-mid);
+      color: var(--ink-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .help-btn:hover      { border-color: var(--accent); color: var(--accent); }
+    .help-btn:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+    .header-rule {
+      max-width: var(--max-w);
+      border: none;
+      border-top: 1px solid var(--border);
+      margin-bottom: 2.25rem;
+    }
+
+    /* ================================================================
+       SCENARIO META
+       ================================================================ */
+    .scenario-label {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--ink-muted);
+      margin-bottom: 0.3125rem;
+    }
+
+    .scenario-title {
+      font-family: var(--font-ui);
+      font-size: 1.0625rem;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+      margin-bottom: 1.875rem;
+      max-width: var(--max-w);
+    }
+
+    /* ================================================================
+       HINT PANEL
+       six rows — raw bordered, no rounding
+       ================================================================ */
+    .hint-panel {
+      max-width: var(--max-w);
+      border-top: 1px solid var(--border);
+      margin-bottom: 1.875rem;
+    }
+
+    .hint-row {
+      display: grid;
+      grid-template-columns: 4.5rem 1fr;
+      gap: 1.375rem;
+      align-items: center;
+      min-height: var(--row-h);
+      border-bottom: 1px solid var(--border);
+
+      /* left accent bar */
+      border-left: 3px solid transparent;
+      padding: 0.8125rem 0 0.8125rem 0.875rem;
+
+      transition: border-left-color 0.2s ease;
+    }
+
+    .hint-row.revealed {
+      border-left-color: var(--accent);
+    }
+
+    .hint-row.locked {
+      border-left: 3px dashed var(--border-mid);
+      opacity: 0.4;
+    }
+
+    /* Animate only the newly revealed row */
+    .hint-row.animating .hint-content-wrap {
+      animation: wipeIn 280ms cubic-bezier(0.25, 0, 0.3, 1) both;
+    }
+
+    .hint-row.animating .hint-text,
+    .hint-row.animating .hint-placeholder {
+      animation: fadeInText 160ms ease 100ms both;
+    }
+
+    .hint-label {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      font-variant: small-caps;
+      letter-spacing: 0.1em;
+      color: var(--ink-muted);
+      white-space: nowrap;
+      align-self: start;
+      padding-top: 2px;
+    }
+
+    .hint-content-wrap {
+      min-width: 0;
+    }
+
+    .hint-text {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .hint-placeholder {
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      color: var(--ink-dim);
+      letter-spacing: 0.15em;
+    }
+
+    /* ================================================================
+       INPUT AREA
+       ================================================================ */
+    #input-area {
+      max-width: var(--max-w);
+      margin-bottom: 3rem;
+    }
+
+    #input-area.fading-out {
+      animation: crossfadeOut 0.28s ease forwards;
+      pointer-events: none;
+    }
+
+    /* Search field */
+    .search-wrapper {
+      position: relative;
+      margin-bottom: 0.875rem;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 44px;
+      padding: 0 1rem;
+      background: transparent;
+      border: 1px solid var(--border-mid);
+      border-radius: 0;                   /* raw — no rounding */
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .search-input::placeholder {
+      color: var(--ink-muted);
+      font-style: italic;
+    }
+
+    .search-input:hover   { border-color: var(--border-mid); }
+    .search-input:focus   { border-color: var(--accent); }
+    .search-input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Dropdown */
+    .dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border: 1px solid var(--border-mid);
+      border-top: none;
+      z-index: 100;
+      max-height: 272px;
+      overflow-y: auto;
+      animation: dropIn 0.12s ease both;
+
+      /* Custom thin scrollbar */
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-mid) transparent;
+    }
+
+    .dropdown[hidden] { display: none; }
+
+    .dropdown-group {
+      /* visual separator between groups (except the first) */
+    }
+
+    .dropdown-group + .dropdown-group .dropdown-group-label {
+      border-top: 1px solid var(--border);
+    }
+
+    .dropdown-group-label {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      font-variant: small-caps;
+      letter-spacing: 0.14em;
+      color: var(--ink-dim);
+      padding: 0.625rem 0.875rem 0.25rem;
+    }
+
+    .dropdown-item {
+      padding: 0.5625rem 0.875rem;
+      min-height: 40px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--ink-muted);
+      cursor: pointer;
+      border-top: 1px solid var(--border);
+      transition: background 0.08s, color 0.08s;
+      display: flex;
+      align-items: center;
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item.active {
+      background: var(--accent-dim);
+      color: var(--ink);
+    }
+
+    /* Pending guess chip — [ label × ] */
+    .pending-chip {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      color: var(--accent);
+      min-height: 1.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    .chip-remove {
+      color: var(--ink-dim);
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      padding: 0 0 0 0.375rem;
+      line-height: 1;
+      transition: color 0.1s;
+    }
+
+    .chip-remove:hover { color: var(--ink); }
+
+    /* Actions row */
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    /* "reveal hint →" — text link style */
+    .reveal-link {
+      font-family: var(--font-ui);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--ink-muted);
+      text-decoration: underline;
+      text-decoration-color: var(--border-mid);
+      text-underline-offset: 3px;
+      padding: 0;
+      transition: color 0.15s, text-decoration-color 0.15s;
+    }
+
+    .reveal-link:hover:not(:disabled) {
+      color: var(--ink);
+      text-decoration-color: var(--ink-muted);
+    }
+
+    .reveal-link:focus-visible {
+      outline: 1px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .reveal-link:disabled {
+      opacity: 0.3;
+      cursor: default;
+      text-decoration: none;
+    }
+
+    /* "[submit]" — filled amber CTA */
+    .submit-btn {
+      background: var(--accent);
+      color: #0e0e0e;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      padding: 0.5rem 1.375rem;
+      border-radius: 0;
+      min-height: 36px;
+      transition: opacity 0.15s;
+    }
+
+    .submit-btn:hover:not(:disabled)  { opacity: 0.88; }
+    .submit-btn:active:not(:disabled) { opacity: 0.72; }
+
+    .submit-btn:focus-visible {
+      outline: 1px solid var(--ink);
+      outline-offset: 2px;
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.22;
+      cursor: not-allowed;
+    }
+
+    /* Guess history */
+    .guess-history {
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    .guess-history-item {
+      display: flex;
+      gap: 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--ink-muted);
+      padding: 0.1875rem 0;
+    }
+
+    .guess-num {
+      color: var(--ink-dim);
+      min-width: 1.375rem;
+    }
+
+    /* ================================================================
+       RESULT AREA
+       ================================================================ */
+    #result-area {
+      max-width: var(--max-w);
+      margin-bottom: 3.5rem;
+      display: none;
+    }
+
+    #result-area.visible {
+      display: block;
+      animation: crossfadeIn 0.4s cubic-bezier(0.25, 0, 0.3, 1) both;
+    }
+
+    /* "diagnosed in 3 hints." / "missed. the bug was:" */
+    .result-outcome {
+      font-family: var(--font-ui);
+      font-size: 0.9375rem;
+      font-weight: 400;
+      color: var(--ink-muted);
+      font-style: italic;
+      margin-bottom: 1.375rem;
+    }
+
+    .result-answer-label {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--ink-dim);
+      margin-bottom: 0.4375rem;
+    }
+
+    /* Typewriter target */
+    .result-answer {
+      font-family: var(--font-mono);
+      font-size: 1.1875rem;
+      font-weight: 700;
+      min-height: 1.875rem;
+      margin-bottom: 1.875rem;
+    }
+
+    .result-answer.correct { color: var(--accent); }
+    .result-answer.wrong   { color: var(--wrong);  }
+
+    .result-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    .result-explanation {
+      font-family: var(--font-ui);
+      font-size: 0.9375rem;
+      line-height: 1.72;
+      color: var(--ink-muted);
+      max-width: 58ch;
+      margin-bottom: 2rem;
+    }
+
+    .result-explanation p + p { margin-top: 0.875rem; }
+
+    .result-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    /* "[ copy result ]" */
+    .copy-btn {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      color: var(--ink-muted);
+      border: 1px solid var(--border-mid);
+      padding: 0.5rem 1.125rem;
+      border-radius: 0;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .copy-btn:hover      { border-color: var(--accent); color: var(--accent); }
+    .copy-btn:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+    .countdown {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      color: var(--ink-dim);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ================================================================
+       HOW TO PLAY — full-screen overlay, slides from right
+       ================================================================ */
+    #how-to-play {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 200;
+      padding: clamp(2rem, 6vw, 4rem) var(--pad-h) 4rem;
+      overflow-y: auto;
+      transform: translateX(100%);
+      transition: transform 240ms ease-out;
+    }
+
+    #how-to-play.open {
+      transform: translateX(0);
+    }
+
+    .htp-header {
+      max-width: var(--max-w);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 3rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .htp-title {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+
+    .htp-close {
+      font-family: var(--font-ui);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--ink-muted);
+      transition: color 0.15s;
+    }
+
+    .htp-close:hover      { color: var(--ink); }
+    .htp-close:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+
+    .htp-steps { max-width: var(--max-w); }
+
+    .htp-step {
+      display: grid;
+      grid-template-columns: 3rem 1fr;
+      gap: 1.25rem;
+      margin-bottom: 2.75rem;
+      align-items: start;
+    }
+
+    .htp-num {
+      font-family: var(--font-ui);
+      font-size: 2.25rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--accent);
+      padding-top: 2px;
+    }
+
+    .htp-step-title {
+      font-weight: 600;
+      font-size: 0.9375rem;
+      margin-bottom: 0.4375rem;
+    }
+
+    .htp-step-desc {
+      font-size: 0.875rem;
+      color: var(--ink-muted);
+      line-height: 1.65;
+    }
+
+    .htp-example {
+      margin-top: 1rem;
+      border-left: 3px solid var(--accent);
+      padding: 0.6875rem 1rem;
+      background: var(--accent-dim);
+    }
+
+    .htp-ex-label {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--ink-muted);
+      margin-bottom: 0.3125rem;
+    }
+
+    .htp-ex-text {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--ink);
+      line-height: 1.55;
+    }
+
+    /* ================================================================
+       TOAST — slides up from bottom
+       ================================================================ */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(140%);
+      background: var(--ink);
+      color: var(--bg);
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      font-weight: 400;
+      padding: 0.5625rem 1.25rem;
+      white-space: nowrap;
+      z-index: 400;
+      opacity: 0;
+      transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+      pointer-events: none;
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* ================================================================
+       MOBILE
+       ================================================================ */
+    @media (max-width: 540px) {
+      :root { --pad-h: 1.25rem; }
+
+      .hint-row {
+        grid-template-columns: 3.25rem 1fr;
+        gap: 0.75rem;
+        padding-left: 0.625rem;
+      }
+
+      .hint-text { font-size: 0.75rem; }
+
+      .actions { gap: 1rem; }
+
+      .submit-btn { padding: 0.5rem 1rem; }
+
+      .result-answer { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── HEADER ── -->
+  <header class="site-header col">
+    <div class="logo">debugdle<span class="cursor">_</span></div>
+    <div class="header-right">
+      <span class="streak">🔥 4</span>
+      <button class="help-btn" id="help-btn" aria-label="How to play" aria-haspopup="dialog">?</button>
+    </div>
+  </header>
+  <hr class="header-rule">
+
+  <!-- ── MAIN ── -->
+  <main>
+    <p class="scenario-label">today's scenario</p>
+    <h1 class="scenario-title" id="scenario-title"></h1>
+
+    <!-- Hint panel — 6 rows -->
+    <div class="hint-panel col" id="hint-panel" role="list" aria-label="Hints"></div>
+
+    <!-- Input area (hidden after submit) -->
+    <section id="input-area" aria-label="Make a guess">
+
+      <div class="search-wrapper">
+        <input
+          type="text"
+          id="search-input"
+          class="search-input"
+          placeholder="type to search bug categories"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search bug types"
+          aria-autocomplete="list"
+          aria-haspopup="listbox"
+          aria-controls="dropdown"
+        >
+        <ul id="dropdown" class="dropdown" role="listbox" hidden></ul>
+      </div>
+
+      <!-- Pending guess chip: [ label × ] -->
+      <div id="pending-chip" class="pending-chip" aria-live="polite"></div>
+
+      <div class="actions">
+        <button class="reveal-link" id="reveal-btn">reveal hint 2 →</button>
+        <button class="submit-btn"  id="submit-btn" disabled>[submit]</button>
+      </div>
+
+      <ol class="guess-history" id="guess-history" aria-label="Guess history"></ol>
+    </section>
+
+    <!-- Result area (shown after submit) -->
+    <section id="result-area" aria-live="polite" aria-label="Result">
+      <p  class="result-outcome"      id="result-outcome"></p>
+      <p  class="result-answer-label">the bug was</p>
+      <p  class="result-answer"       id="result-answer"></p>
+      <hr class="result-divider">
+      <div class="result-explanation" id="result-explanation"></div>
+      <div class="result-actions">
+        <button class="copy-btn" id="copy-btn">[ copy result ]</button>
+        <p      class="countdown" id="countdown" aria-live="off"></p>
+      </div>
+    </section>
+  </main>
+
+</div><!-- /#app -->
+
+
+<!-- ── HOW TO PLAY OVERLAY ── -->
+<aside id="how-to-play" role="dialog" aria-modal="true" aria-label="How to play" tabindex="-1">
+  <div class="htp-header col">
+    <span class="htp-title">how to play</span>
+    <button class="htp-close" id="htp-close">✕ close</button>
+  </div>
+  <div class="htp-steps">
+    <div class="htp-step">
+      <span class="htp-num">1</span>
+      <div>
+        <p class="htp-step-title">Read the hints</p>
+        <p class="htp-step-desc">
+          Each puzzle reveals up to 6 hints, one at a time.
+          Every hint narrows down the type of bug. You can reveal
+          as many as you need before guessing.
+        </p>
+        <div class="htp-example">
+          <p class="htp-ex-label">example hint</p>
+          <p class="htp-ex-text">Server logs show 312 queries firing in 400ms. All succeed. No errors.</p>
+        </div>
+      </div>
+    </div>
+    <div class="htp-step">
+      <span class="htp-num">2</span>
+      <div>
+        <p class="htp-step-title">Search for a bug type</p>
+        <p class="htp-step-desc">
+          Type in the search field to filter through 100+ canonical
+          bug categories. Use arrow keys to navigate, Enter to select.
+        </p>
+      </div>
+    </div>
+    <div class="htp-step">
+      <span class="htp-num">3</span>
+      <div>
+        <p class="htp-step-title">Submit when confident</p>
+        <p class="htp-step-desc">
+          You get one submission. Fewer hints used = better brag.
+          A new puzzle drops every day at midnight.
+        </p>
+      </div>
+    </div>
+  </div>
+</aside>
+
+
+<!-- ── TOAST ── -->
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+
+<!-- ================================================================
+     GAME SCRIPT
+     ================================================================ -->
+<script>
+/* ── DATA ─────────────────────────────────────────────────── */
+
+const SCENARIO = {
+  title:    'The Dashboard That Loads Forever',
+  bugKey:   'N_PLUS_ONE_QUERY',
+  bugLabel: 'N+1 query problem',
+  hints: [
+    'Users complain the dashboard takes 8–12 seconds to load on first visit.',
+    'The backend is a Node.js API connected to a PostgreSQL database. No caching layer.',
+    'Server logs show 312 queries firing in 400ms. All succeed. No errors.',
+    'The dashboard fetches a list of 50 projects, then for each project calls getOwner(project.userId).',
+    'Adding a console.log inside getOwner prints exactly 50 times per page load.',
+    'A single JOIN query returning all owners at once drops load time to 120ms.',
+  ],
+  explanation: [
+    'This is a classic N+1 query problem. For each of the 50 projects fetched in the initial query, a separate SQL query fires to retrieve the owner — 1 initial query + 50 follow-up queries = 51 total.',
+    'The fix is a single JOIN (or an ORM .include()) that fetches all data in one round trip. The tell-tale sign is always a log showing N identical small queries where N equals the number of parent records.',
+  ],
+};
+
+const BUG_TYPES = [
+  // Async / Timing
+  { key: 'ASYNC_RACE_CONDITION',     label: 'Async race condition',             group: 'Async' },
+  { key: 'MISSING_AWAIT',            label: 'Missing await',                    group: 'Async' },
+  { key: 'PROMISE_NOT_HANDLED',      label: 'Promise not handled',              group: 'Async' },
+  { key: 'EVENT_LOOP_BLOCKING',      label: 'Event loop blocking',              group: 'Async' },
+  { key: 'STALE_CLOSURE',            label: 'Stale closure in async callback',  group: 'Async' },
+  { key: 'UNHANDLED_REJECTION',      label: 'Unhandled promise rejection',      group: 'Async' },
+  { key: 'TIMEOUT_NOT_CLEARED',      label: 'Timeout not cleared',              group: 'Async' },
+  { key: 'DEBOUNCE_MISSING',         label: 'Missing debounce / throttle',      group: 'Async' },
+  // Frontend
+  { key: 'STATE_NOT_UPDATING',       label: 'State not updating',               group: 'Frontend' },
+  { key: 'INFINITE_RERENDER',        label: 'Infinite re-render loop',          group: 'Frontend' },
+  { key: 'MISSING_DEPENDENCY',       label: 'Missing useEffect dependency',     group: 'Frontend' },
+  { key: 'KEY_PROP_MISSING',         label: 'Missing key prop in list',         group: 'Frontend' },
+  { key: 'HYDRATION_MISMATCH',       label: 'SSR hydration mismatch',           group: 'Frontend' },
+  { key: 'CSS_SPECIFICITY',          label: 'CSS specificity conflict',         group: 'Frontend' },
+  { key: 'Z_INDEX_STACKING',         label: 'Z-index stacking context',         group: 'Frontend' },
+  { key: 'STALE_PROPS',              label: 'Stale props in event handler',     group: 'Frontend' },
+  { key: 'DERIVED_STATE_ANTIPATTERN',label: 'Derived state from props bug',     group: 'Frontend' },
+  // Backend
+  { key: 'API_TIMEOUT',              label: 'API timeout',                      group: 'Backend' },
+  { key: 'CORS_ERROR',               label: 'CORS policy violation',            group: 'Backend' },
+  { key: 'UNHANDLED_EXCEPTION',      label: 'Unhandled server exception',       group: 'Backend' },
+  { key: 'MIDDLEWARE_ORDER',         label: 'Middleware order conflict',        group: 'Backend' },
+  { key: 'ENV_VAR_MISSING',          label: 'Missing environment variable',     group: 'Backend' },
+  { key: 'WRONG_HTTP_METHOD',        label: 'Wrong HTTP method used',           group: 'Backend' },
+  { key: 'RESPONSE_SENT_TWICE',      label: 'Response sent twice',              group: 'Backend' },
+  { key: 'CIRCULAR_DEPENDENCY',      label: 'Circular module dependency',       group: 'Backend' },
+  // Data / DB
+  { key: 'N_PLUS_ONE_QUERY',         label: 'N+1 query problem',                group: 'Data / DB' },
+  { key: 'MISSING_INDEX',            label: 'Missing database index',           group: 'Data / DB' },
+  { key: 'STALE_CACHE',              label: 'Stale cache data',                 group: 'Data / DB' },
+  { key: 'DEADLOCK',                 label: 'Database deadlock',                group: 'Data / DB' },
+  { key: 'SCHEMA_MISMATCH',          label: 'Schema mismatch / missing migration', group: 'Data / DB' },
+  { key: 'NULL_NOT_HANDLED',         label: 'Null value not handled',           group: 'Data / DB' },
+  { key: 'TIMEZONE_MISMATCH',        label: 'Timezone mismatch in queries',     group: 'Data / DB' },
+  { key: 'ENCODING_MISMATCH',        label: 'Character encoding mismatch',      group: 'Data / DB' },
+  { key: 'CONNECTION_POOL_EXHAUSTED',label: 'DB connection pool exhausted',     group: 'Data / DB' },
+  { key: 'TRANSACTION_NOT_COMMITTED',label: 'Transaction not committed',        group: 'Data / DB' },
+  // Infra
+  { key: 'RATE_LIMIT_EXCEEDED',      label: 'Rate limit exceeded',              group: 'Infra' },
+  { key: 'DNS_RESOLUTION_FAILURE',   label: 'DNS resolution failure',           group: 'Infra' },
+  { key: 'TLS_CERT_EXPIRED',         label: 'TLS certificate expired',          group: 'Infra' },
+  { key: 'CDN_CACHE_STALE',          label: 'CDN serving stale asset',          group: 'Infra' },
+  { key: 'PROCESS_OOM',              label: 'Out of memory (OOM) kill',         group: 'Infra' },
+  { key: 'CONTAINER_RESTART_LOOP',   label: 'Container restart loop',           group: 'Infra' },
+  { key: 'HEALTH_CHECK_FAILING',     label: 'Health check failing silently',    group: 'Infra' },
+  { key: 'PORT_ALREADY_IN_USE',      label: 'Port already in use',              group: 'Infra' },
+];
+
+/* ── STATE ───────────────────────────────────────────────── */
+
+const state = {
+  hintsRevealed: 1,
+  pendingGuess:  null,   // { key, label } | null
+  submitted:     false,
+  status:        'playing', // 'playing' | 'won' | 'lost'
+};
+
+/* ── DOM ─────────────────────────────────────────────────── */
+
+const el = id => document.getElementById(id);
+
+const scenarioTitle   = el('scenario-title');
+const hintPanel       = el('hint-panel');
+const searchInput     = el('search-input');
+const dropdown        = el('dropdown');
+const pendingChip     = el('pending-chip');
+const revealBtn       = el('reveal-btn');
+const submitBtn       = el('submit-btn');
+const guessHistory    = el('guess-history');
+const inputArea       = el('input-area');
+const resultArea      = el('result-area');
+const resultOutcome   = el('result-outcome');
+const resultAnswer    = el('result-answer');
+const resultExpl      = el('result-explanation');
+const copyBtn         = el('copy-btn');
+const countdownEl     = el('countdown');
+const helpBtn         = el('help-btn');
+const howToPlay       = el('how-to-play');
+const htpClose        = el('htp-close');
+const toastEl         = el('toast');
+
+/* Dropdown state */
+let ddItems      = [];  // filtered BugType[]
+let ddActiveIdx  = -1;
+
+/* ── INIT ────────────────────────────────────────────────── */
+
+function init() {
+  scenarioTitle.textContent = SCENARIO.title;
+  renderHints();
+  updateRevealBtn();
+  updateSubmitBtn();
+}
+
+/* ── HINT PANEL ──────────────────────────────────────────── */
+
+/**
+ * Re-render all hint rows.
+ * @param {number} newlyRevealedNum  – hint number that just animated in (or -1)
+ */
+function renderHints(newlyRevealedNum = -1) {
+  hintPanel.innerHTML = '';
+
+  SCENARIO.hints.forEach((text, idx) => {
+    const num      = idx + 1;
+    const revealed = num <= state.hintsRevealed;
+    const isNew    = num === newlyRevealedNum;
+
+    const row = document.createElement('div');
+    row.className = [
+      'hint-row',
+      revealed ? 'revealed' : 'locked',
+      isNew    ? 'animating' : '',
+    ].filter(Boolean).join(' ');
+    row.setAttribute('role', 'listitem');
+
+    const labelSpan = `<span class="hint-label">hint ${String(num).padStart(2, '0')}</span>`;
+    const contentDiv = revealed
+      ? `<div class="hint-content-wrap"><span class="hint-text">${escHtml(text)}</span></div>`
+      : `<div class="hint-content-wrap"><span class="hint-placeholder">——</span></div>`;
+
+    row.innerHTML = labelSpan + contentDiv;
+
+    /* Remove animating class once done so future re-renders don't re-fire */
+    if (isNew) {
+      row.addEventListener('animationend', () => {
+        row.classList.remove('animating');
+      }, { once: true });
+    }
+
+    hintPanel.appendChild(row);
+  });
+}
+
+/* ── PENDING CHIP ────────────────────────────────────────── */
+
+function renderPendingChip() {
+  if (!state.pendingGuess) {
+    pendingChip.innerHTML = '';
+    return;
+  }
+  /* Renders as:  [ async race condition × ]  */
+  pendingChip.innerHTML =
+    `[ <span>${escHtml(state.pendingGuess.label)}</span>&nbsp;<button class="chip-remove" id="chip-x" aria-label="Remove guess">×</button> ]`;
+  el('chip-x').addEventListener('click', clearPending);
+}
+
+function clearPending() {
+  state.pendingGuess = null;
+  renderPendingChip();
+  updateSubmitBtn();
+  searchInput.focus();
+}
+
+/* ── BUTTON STATE ────────────────────────────────────────── */
+
+function updateRevealBtn() {
+  const canReveal = state.hintsRevealed < 6 && !state.submitted;
+  revealBtn.disabled = !canReveal;
+
+  if (state.submitted || state.hintsRevealed >= 6) {
+    revealBtn.textContent = 'all hints revealed';
+  } else {
+    revealBtn.textContent = `reveal hint ${state.hintsRevealed + 1} →`;
+  }
+}
+
+function updateSubmitBtn() {
+  submitBtn.disabled = !state.pendingGuess || state.submitted;
+}
+
+/* ── REVEAL ──────────────────────────────────────────────── */
+
+revealBtn.addEventListener('click', () => {
+  if (state.hintsRevealed >= 6 || state.submitted) return;
+  state.hintsRevealed++;
+  renderHints(state.hintsRevealed);
+  updateRevealBtn();
+});
+
+/* ── SUBMIT ──────────────────────────────────────────────── */
+
+submitBtn.addEventListener('click', handleSubmit);
+
+function handleSubmit() {
+  if (!state.pendingGuess || state.submitted) return;
+
+  state.submitted = true;
+  state.status = state.pendingGuess.key === SCENARIO.bugKey ? 'won' : 'lost';
+
+  /* Fade out input area, then show result */
+  inputArea.classList.add('fading-out');
+  inputArea.addEventListener('animationend', () => {
+    inputArea.style.display = 'none';
+    showResult();
+  }, { once: true });
+
+  updateRevealBtn();
+  updateSubmitBtn();
+}
+
+/* ── RESULT ──────────────────────────────────────────────── */
+
+function showResult() {
+  const won        = state.status === 'won';
+  const hintsUsed  = state.hintsRevealed;
+
+  /* Outcome line */
+  resultOutcome.textContent = won
+    ? `diagnosed in ${hintsUsed} hint${hintsUsed === 1 ? '' : 's'}.`
+    : `missed. the bug was:`;
+
+  /* Answer — typewriter animation */
+  resultAnswer.className = `result-answer ${won ? 'correct' : 'wrong'}`;
+  typewriter(resultAnswer, SCENARIO.bugLabel, 20, () => {
+    /* Explanation paragraphs appear after typewriter completes */
+    resultExpl.innerHTML = SCENARIO.explanation
+      .map(p => `<p>${escHtml(p)}</p>`)
+      .join('');
+  });
+
+  /* Show section */
+  resultArea.classList.add('visible');
+
+  /* Wire copy button */
+  copyBtn.addEventListener('click', handleCopy, { once: true });
+
+  /* Start countdown */
+  startCountdown();
+}
+
+/* ── TYPEWRITER ──────────────────────────────────────────── */
+
+function typewriter(target, text, speed, onComplete) {
+  /* Respect reduced-motion preference */
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    target.textContent = text;
+    onComplete?.();
+    return;
+  }
+
+  let i = 0;
+  target.textContent = '';
+
+  const tick = () => {
+    if (i < text.length) {
+      target.textContent += text[i++];
+      setTimeout(tick, speed);
+    } else {
+      onComplete?.();
+    }
+  };
+  setTimeout(tick, speed);
+}
+
+/* ── SHARE / COPY ────────────────────────────────────────── */
+
+function handleCopy() {
+  const won       = state.status === 'won';
+  const n         = state.hintsRevealed;
+  const squares   = Array.from({ length: 6 }, (_, i) => {
+    if (won)  return i < n ? (i === n - 1 ? '🟨' : '⬛') : '⬜';
+    return '⬛';
+  }).join('');
+
+  const shareText = [
+    'debugdle',
+    `${won ? '✅' : '❌'} ${n}/6`,
+    squares,
+    'debugdle.app',
+  ].join('\n');
+
+  navigator.clipboard.writeText(shareText)
+    .then(()  => showToast('copied to clipboard'))
+    .catch(()  => showToast('copy failed — try again'));
+
+  /* Re-wire for repeated copies */
+  copyBtn.addEventListener('click', handleCopy, { once: true });
+}
+
+/* ── COUNTDOWN ───────────────────────────────────────────── */
+
+function startCountdown() {
+  const tick = () => {
+    const now  = new Date();
+    const next = new Date(now);
+    next.setDate(next.getDate() + 1);
+    next.setHours(0, 0, 0, 0);
+    const diff = next - now;
+
+    const hh = String(Math.floor(diff / 3_600_000)).padStart(2, '0');
+    const mm = String(Math.floor((diff % 3_600_000) / 60_000)).padStart(2, '0');
+    const ss = String(Math.floor((diff % 60_000)    / 1_000)).padStart(2, '0');
+    countdownEl.textContent = `next puzzle in ${hh}:${mm}:${ss}`;
+  };
+
+  tick();
+  setInterval(tick, 1000);
+}
+
+/* ── TOAST ───────────────────────────────────────────────── */
+
+let toastTimer = null;
+
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1800);
+}
+
+/* ── DROPDOWN ────────────────────────────────────────────── */
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  if (!q) { closeDropdown(); return; }
+  openDropdown(q);
+});
+
+searchInput.addEventListener('keydown', e => {
+  if (dropdown.hidden) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    ddActiveIdx = Math.min(ddActiveIdx + 1, ddItems.length - 1);
+    syncDropdownActive();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    ddActiveIdx = Math.max(ddActiveIdx - 1, 0);
+    syncDropdownActive();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (ddActiveIdx >= 0 && ddItems[ddActiveIdx]) {
+      selectBug(ddItems[ddActiveIdx]);
+    }
+  } else if (e.key === 'Escape') {
+    closeDropdown();
+    searchInput.blur();
+  }
+});
+
+searchInput.addEventListener('blur', () => {
+  /* Short delay so a mousedown on a dropdown item fires before blur */
+  setTimeout(closeDropdown, 160);
+});
+
+function openDropdown(query) {
+  const results = BUG_TYPES
+    .filter(b =>
+      b.label.toLowerCase().includes(query) ||
+      b.group.toLowerCase().includes(query)
+    )
+    .slice(0, 14);
+
+  if (!results.length) { closeDropdown(); return; }
+
+  /* Build grouped list */
+  const groups = {};
+  results.forEach(b => {
+    if (!groups[b.group]) groups[b.group] = [];
+    groups[b.group].push(b);
+  });
+
+  dropdown.innerHTML = '';
+  ddItems     = [];
+  ddActiveIdx = -1;
+
+  Object.entries(groups).forEach(([groupName, items]) => {
+    const groupEl = document.createElement('div');
+    groupEl.className = 'dropdown-group';
+
+    const labelEl = document.createElement('div');
+    labelEl.className = 'dropdown-group-label';
+    labelEl.textContent = groupName;
+    labelEl.setAttribute('aria-hidden', 'true');
+    groupEl.appendChild(labelEl);
+
+    items.forEach(item => {
+      const li = document.createElement('li');
+      li.className = 'dropdown-item';
+      li.textContent = item.label;
+      li.setAttribute('role', 'option');
+      li.setAttribute('data-key', item.key);
+
+      li.addEventListener('mousedown', e => {
+        e.preventDefault(); // prevent blur before select fires
+        selectBug(item);
+      });
+
+      groupEl.appendChild(li);
+      ddItems.push(item);
+    });
+
+    dropdown.appendChild(groupEl);
+  });
+
+  dropdown.hidden = false;
+}
+
+function closeDropdown() {
+  dropdown.hidden = true;
+  ddItems     = [];
+  ddActiveIdx = -1;
+}
+
+function syncDropdownActive() {
+  [...dropdown.querySelectorAll('.dropdown-item')].forEach((item, i) => {
+    item.classList.toggle('active', i === ddActiveIdx);
+    if (i === ddActiveIdx) item.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+function selectBug(bugType) {
+  state.pendingGuess = bugType;
+  searchInput.value = '';
+  closeDropdown();
+  renderPendingChip();
+  updateSubmitBtn();
+}
+
+/* ── HOW TO PLAY ─────────────────────────────────────────── */
+
+helpBtn.addEventListener('click', () => {
+  howToPlay.classList.add('open');
+  howToPlay.focus();
+});
+
+htpClose.addEventListener('click', () => {
+  howToPlay.classList.remove('open');
+  helpBtn.focus();
+});
+
+howToPlay.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    howToPlay.classList.remove('open');
+    helpBtn.focus();
+  }
+});
+
+/* ── UTIL ────────────────────────────────────────────────── */
+
+function escHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* ── BOOT ────────────────────────────────────────────────── */
+
+init();
+</script>
+
+</body>
+</html>
