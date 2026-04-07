@@ -29,12 +29,19 @@ export function revealNextHint(state: GameState): GameState {
 export function submitGuess(state: GameState, bugId: string): GameState {
   if (state.submitted) return state;
   const correct = bugId === state.scenario.bugId;
-  return {
-    ...state,
-    guesses: [...state.guesses, bugId],
-    submitted: true,
-    status: correct ? "won" : "lost",
-  };
+  const newGuesses = [...state.guesses, bugId];
+
+  if (correct) {
+    return { ...state, guesses: newGuesses, submitted: true, status: "won" };
+  }
+
+  // Wrong guess with hints remaining — auto-reveal next hint, keep playing
+  if (state.hintsRevealed < 6) {
+    return { ...state, guesses: newGuesses, hintsRevealed: state.hintsRevealed + 1 };
+  }
+
+  // All 6 hints used and still wrong — game over
+  return { ...state, guesses: newGuesses, submitted: true, status: "lost" };
 }
 
 // Fuzzy search over canonical bug types

@@ -2,6 +2,7 @@
 
 import { useGame } from "@/hooks/useGame";
 import { Scenario } from "@/data/scenarios";
+import { getBugById } from "@/lib/game";
 import { HintCard } from "./HintCard";
 import { GuessInput } from "./GuessInput";
 import { ResultScreen } from "./ResultScreen";
@@ -12,13 +13,13 @@ interface Props {
 
 export function GameBoard({ scenario }: Props) {
   const { state, revealHint, guess } = useGame(scenario);
-  const { hintsRevealed, status, submitted } = state;
-  const gameOver = submitted;
+  const { hintsRevealed, status, submitted, guesses } = state;
   const canReveal = hintsRevealed < 6 && !submitted;
 
   return (
-    <div className="game-board">
-      <div className="hints-list">
+    <>
+      {/* Hint panel */}
+      <div className="hint-panel" role="list" aria-label="Hints">
         {scenario.hints.map((hint) => (
           <HintCard
             key={hint.number}
@@ -29,32 +30,36 @@ export function GameBoard({ scenario }: Props) {
         ))}
       </div>
 
-      {!gameOver && (
-        <div className="game-actions">
-          {canReveal && (
-            <button className="reveal-btn" onClick={revealHint}>
-              Reveal Hint #{hintsRevealed + 1}
-              <span className="reveal-btn-cost">
-                {hintsRevealed + 1 <= 3 ? "" : hintsRevealed === 5 ? " (last)" : ""}
-              </span>
-            </button>
+      {/* Input area — hidden after final submission */}
+      {!submitted && (
+        <>
+          <GuessInput
+            onSubmit={guess}
+            onReveal={revealHint}
+            canReveal={canReveal}
+            hintsRevealed={hintsRevealed}
+            disabled={false}
+          />
+
+          {/* Wrong guess history */}
+          {guesses.length > 0 && (
+            <ol className="guess-history" aria-label="Guess history">
+              {guesses.map((id, i) => {
+                const bug = getBugById(id);
+                return (
+                  <li key={i} className="guess-history-item">
+                    <span className="guess-num">{i + 1}.</span>
+                    <span>{bug?.label ?? id}</span>
+                  </li>
+                );
+              })}
+            </ol>
           )}
-
-          <div className="divider-or">
-            <span>or submit your guess</span>
-          </div>
-
-          <GuessInput onSubmit={guess} disabled={gameOver} />
-
-          <p className="hint-counter">
-            {hintsRevealed} / 6 hints revealed
-          </p>
-        </div>
+        </>
       )}
 
-      {gameOver && (
-        <ResultScreen state={state} />
-      )}
-    </div>
+      {/* Result — shown after game ends */}
+      {submitted && <ResultScreen state={state} />}
+    </>
   );
 }

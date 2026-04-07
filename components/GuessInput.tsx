@@ -1,41 +1,58 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { BugType, CATEGORY_LABELS } from "@/data/bug-types";
+import { BugType, BUG_TYPES, CATEGORY_LABELS, BugCategory } from "@/data/bug-types";
 import { searchBugTypes } from "@/lib/game";
 
 interface Props {
   onSubmit: (bugId: string) => void;
+  onReveal: () => void;
+  canReveal: boolean;
+  hintsRevealed: number;
   disabled?: boolean;
 }
 
-export function GuessInput({ onSubmit, disabled }: Props) {
+// Group bug types by category for the dropdown
+function groupByCategory(items: BugType[]): Map<BugCategory, BugType[]> {
+  const map = new Map<BugCategory, BugType[]>();
+  for (const item of items) {
+    const group = map.get(item.category) ?? [];
+    group.push(item);
+    map.set(item.category, group);
+  }
+  return map;
+}
+
+export function GuessInput({ onSubmit, onReveal, canReveal, hintsRevealed, disabled }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<BugType[]>([]);
   const [selected, setSelected] = useState<BugType | null>(null);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
-    if (query.length > 0 || open) {
-      setResults(searchBugTypes(query));
-    }
-  }, [query, open]);
+    setResults(searchBugTypes(query));
+  }, [query]);
 
   const selectItem = useCallback((item: BugType) => {
     setSelected(item);
-    setQuery(item.label);
+    setQuery("");
     setOpen(false);
     setActiveIndex(-1);
   }, []);
+
+  const clearSelection = () => {
+    setSelected(null);
+    setQuery("");
+    setActiveIndex(-1);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!open) {
       if (e.key === "ArrowDown" || e.key === "Enter") {
         setOpen(true);
-        setResults(searchBugTypes(query));
       }
       return;
     }
@@ -56,68 +73,92 @@ export function GuessInput({ onSubmit, disabled }: Props) {
   const handleSubmit = () => {
     if (!selected) return;
     onSubmit(selected.id);
+    setSelected(null);
+    setQuery("");
   };
 
-  return (
-    <div className="guess-input-wrapper">
-      <div className="guess-combobox">
-        <div className="guess-field">
-          <input
-            ref={inputRef}
-            className="guess-input"
-            type="text"
-            placeholder="Type to search bug types…"
-            value={query}
-            disabled={disabled}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setSelected(null);
-              setOpen(true);
-              setActiveIndex(-1);
-            }}
-            onFocus={() => {
-              setOpen(true);
-              setResults(searchBugTypes(query));
-            }}
-            onBlur={() => setTimeout(() => setOpen(false), 150)}
-            onKeyDown={handleKeyDown}
-            autoComplete="off"
-            spellCheck={false}
-          />
-          {selected && (
-            <span className="guess-category-badge">
-              {CATEGORY_LABELS[selected.category]}
-            </span>
-          )}
-        </div>
+  const grouped = groupByCategory(results);
+  const revealLabel = canReveal ? `reveal hint ${hintsRevealed + 1} →` : "all hints revealed";
 
-        {open && results.length > 0 && (
-          <ul ref={listRef} className="guess-dropdown" role="listbox">
-            {results.map((item, i) => (
-              <li
-                key={item.id}
-                role="option"
-                aria-selected={i === activeIndex}
-                className={`guess-option ${i === activeIndex ? "guess-option--active" : ""}`}
-                onMouseDown={() => selectItem(item)}
-              >
-                <span className="guess-option-label">{item.label}</span>
-                <span className="guess-option-cat">
-                  {CATEGORY_LABELS[item.category]}
-                </span>
+  return (
+    <section id="input-area" aria-label="Make a guess">
+      {/* Search */}
+      <div className="search-wrapper">
+        <input
+          ref={inputRef}
+          type="text"
+          className="search-input"
+          placeholder="type to search bug categories"
+          value={query}
+          disabled={disabled || !!selected}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+            setActiveIndex(-1);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onKeyDown={handleKeyDown}
+          autoComplete="off"
+          spellCheck={false}
+          aria-label="Search bug types"
+          aria-autocomplete="list"
+        />
+
+        {open && !selected && results.length > 0 && (
+          <ul className="dropdown" role="listbox">
+            {Array.from(grouped.entries()).map(([cat, items], gi) => (
+              <li key={cat} className="dropdown-group">
+                <div className="dropdown-group-label">{CATEGORY_LABELS[cat]}</div>
+                {items.map((item) => {
+                  const flatIdx = results.indexOf(item);
+                  return (
+                    <div
+                      key={item.id}
+                      role="option"
+                      aria-selected={flatIdx === activeIndex}
+                      className={`dropdown-item${flatIdx === activeIndex ? " active" : ""}`}
+                      onMouseDown={() => selectItem(item)}
+                    >
+                      {item.label}
+                    </div>
+                  );
+                })}
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      <button
-        className="guess-submit-btn"
-        disabled={!selected || disabled}
-        onClick={handleSubmit}
-      >
-        Submit Guess
-      </button>
-    </div>
+      {/* Pending chip */}
+      <div className="pending-chip" aria-live="polite">
+        {selected && (
+          <>
+            [{" "}<span>{selected.label}</span>
+            &nbsp;
+            <button className="chip-remove" onClick={clearSelection} aria-label="Remove guess">×</button>
+            {" "}]
+          </>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="actions">
+        <button
+          className="reveal-link"
+          onClick={onReveal}
+          disabled={!canReveal || disabled}
+        >
+          {revealLabel}
+        </button>
+        <button
+          className="submit-btn"
+          disabled={!selected || disabled}
+          onClick={handleSubmit}
+        >
+          [submit]
+        </button>
+      </div>
+    </section>
   );
 }

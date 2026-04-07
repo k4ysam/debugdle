@@ -1,79 +1,90 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GameState, getBugById, buildShareText } from "@/lib/game";
-import { CATEGORY_LABELS } from "@/data/bug-types";
 
 interface Props {
   state: GameState;
 }
 
+function timeUntilMidnight(): string {
+  const now = new Date();
+  const midnight = new Date();
+  midnight.setHours(24, 0, 0, 0);
+  const diff = midnight.getTime() - now.getTime();
+  const h = Math.floor(diff / 3_600_000);
+  const m = Math.floor((diff % 3_600_000) / 60_000);
+  const s = Math.floor((diff % 60_000) / 1_000);
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 export function ResultScreen({ state }: Props) {
   const [copied, setCopied] = useState(false);
+  const [countdown, setCountdown] = useState(timeUntilMidnight());
+
   const { scenario, status, guesses, hintsRevealed } = state;
   const won = status === "won";
   const correctBug = getBugById(scenario.bugId);
-  const guessedBug = guesses.length > 0 ? getBugById(guesses[guesses.length - 1]) : null;
+  const lastWrongId = !won && guesses.length > 0 ? guesses[guesses.length - 1] : null;
+  const lastWrongBug = lastWrongId ? getBugById(lastWrongId) : null;
+  const totalGuesses = won ? guesses.length : guesses.length;
 
-  const handleShare = async () => {
+  useEffect(() => {
+    const id = setInterval(() => setCountdown(timeUntilMidnight()), 1_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleCopy = async () => {
     const text = buildShareText(state);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback silent
+      // silent fallback
     }
   };
 
+  const outcomeText = won
+    ? `diagnosed in ${hintsRevealed} hint${hintsRevealed === 1 ? "" : "s"}.`
+    : `missed after ${totalGuesses} guess${totalGuesses === 1 ? "" : "es"}.`;
+
+  const correctLabel = won ? "the bug was" : "the correct answer";
+
+  const explanationParts = Array.isArray(scenario.explanation)
+    ? scenario.explanation
+    : [scenario.explanation];
+
   return (
-    <div className={`result-screen ${won ? "result-screen--won" : "result-screen--lost"}`}>
-      <div className={`result-badge ${won ? "result-badge--won" : "result-badge--lost"}`}>
-        {won ? "🟢 Correct!" : "🔴 Not quite"}
-      </div>
+    <section id="result-area" aria-live="polite" aria-label="Result">
+      <p className="result-outcome">{outcomeText}</p>
 
-      <div className="result-hints-used">
-        Used {won ? hintsRevealed : 6} of 6 hints
-        <span className="result-hint-dots">
-          {Array.from({ length: 6 }, (_, i) => (
-            <span
-              key={i}
-              className={`result-dot ${
-                i < (won ? hintsRevealed : 6)
-                  ? won && i === hintsRevealed - 1
-                    ? "result-dot--correct"
-                    : "result-dot--used"
-                  : "result-dot--unused"
-              }`}
-            />
-          ))}
-        </span>
-      </div>
-
-      {!won && guessedBug && (
-        <div className="result-your-guess">
-          <span className="result-label">Your guess</span>
-          <span className="result-bug-name">{guessedBug.label}</span>
-          <span className="result-bug-cat">{CATEGORY_LABELS[guessedBug.category]}</span>
+      {!won && lastWrongBug && (
+        <div className="result-wrong-block">
+          <p className="result-wrong-label">your guess</p>
+          <p className="result-wrong-answer">{lastWrongBug.label}</p>
         </div>
       )}
 
-      <div className="result-answer">
-        <span className="result-label">The answer</span>
-        <span className="result-bug-name result-bug-name--answer">{correctBug?.label}</span>
-        {correctBug && (
-          <span className="result-bug-cat">{CATEGORY_LABELS[correctBug.category]}</span>
-        )}
-      </div>
+      <p className="result-answer-label">{correctLabel}</p>
+      <p className="result-answer correct">{correctBug?.label}</p>
+
+      <hr className="result-divider" />
 
       <div className="result-explanation">
-        <h3 className="result-explanation-title">Why?</h3>
-        <p className="result-explanation-text">{scenario.explanation}</p>
+        {explanationParts.map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
       </div>
 
-      <button className="share-btn" onClick={handleShare}>
-        {copied ? "✓ Copied!" : "Share Result"}
-      </button>
-    </div>
+      <div className="result-actions">
+        <button className="copy-btn" onClick={handleCopy}>
+          {copied ? "[ copied! ]" : "[ copy result ]"}
+        </button>
+        <p className="countdown" aria-live="off">
+          next puzzle in {countdown}
+        </p>
+      </div>
+    </section>
   );
 }
