@@ -30,6 +30,10 @@ export function ResultScreen({ state }: Props) {
   const totalGuesses = won ? guesses.length : guesses.length;
 
   useEffect(() => {
+    document.getElementById("result-area")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  useEffect(() => {
     const id = setInterval(() => setCountdown(timeUntilMidnight()), 1_000);
     return () => clearInterval(id);
   }, []);
