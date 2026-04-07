@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { GameState, getBugById, buildShareText } from "@/lib/game";
+import { SaveStreakPrompt } from "./SaveStreakPrompt";
 
 interface Props {
   state: GameState;
@@ -89,6 +90,8 @@ export function ResultScreen({ state }: Props) {
           next puzzle in {countdown}
         </p>
       </div>
+
+      <SaveStreakPrompt />
     </section>
   );
 }

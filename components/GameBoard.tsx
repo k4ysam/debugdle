@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useGame } from "@/hooks/useGame";
+import { useAuth } from "@/components/AuthProvider";
 import { Scenario } from "@/data/scenarios";
 import { getBugById } from "@/lib/game";
+import { recordPlay } from "@/lib/plays";
 import { HintCard } from "./HintCard";
 import { GuessInput } from "./GuessInput";
 import { ResultScreen } from "./ResultScreen";
@@ -15,6 +18,19 @@ export function GameBoard({ scenario }: Props) {
   const { state, revealHint, guess } = useGame(scenario);
   const { hintsRevealed, status, submitted, guesses } = state;
   const canReveal = hintsRevealed < 6 && !submitted;
+  const { user } = useAuth();
+  const recordedRef = useRef(false);
+
+  // Record play once when game ends
+  useEffect(() => {
+    if (!submitted || recordedRef.current) return;
+    recordedRef.current = true;
+    recordPlay(user?.id ?? null, {
+      scenario_id: scenario.id,
+      hints_used: hintsRevealed,
+      won: status === "won",
+    });
+  }, [submitted, user, scenario.id, hintsRevealed, status]);
 
   return (
     <>

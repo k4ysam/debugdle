@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { AuthMenu } from "./AuthMenu";
+import { useStreak } from "@/hooks/useStreak";
 
 export function Header() {
   const [isLight, setIsLight] = useState(false);
   const [htpOpen, setHtpOpen] = useState(false);
+  const streak = useStreak();
 
   // Apply saved theme on mount
   useEffect(() => {
@@ -31,6 +34,12 @@ export function Header() {
       <header className="site-header">
         <div className="logo">debugdle<span className="cursor">_</span></div>
         <div className="header-right">
+          {streak > 0 && (
+            <span className="streak" title="Current streak">
+              streak {streak}
+            </span>
+          )}
+          <AuthMenu />
           <button
             className="theme-btn"
             onClick={toggleTheme}
