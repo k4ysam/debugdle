@@ -13,7 +13,7 @@ type LeftSidebarProps = {
 
 type Section = "support" | null;
 
-const NAV = [{ id: "support" as Section, icon: "?", label: "SUPPORT" }];
+const NAV = [{ id: "support" as Section, icon: "?", label: "HOW TO PLAY" }];
 
 export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebarProps) {
   const [expanded, setExpanded] = useState<Section>(null);
