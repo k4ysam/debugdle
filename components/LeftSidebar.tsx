@@ -11,12 +11,9 @@ type LeftSidebarProps = {
   toggleTheme: () => void;
 };
 
-type Section = "support" | "changelog" | null;
+type Section = "support" | null;
 
-const NAV = [
-  { id: "support" as Section, icon: "?", label: "SUPPORT" },
-  { id: "changelog" as Section, icon: "↻", label: "CHANGELOG" },
-];
+const NAV = [{ id: "support" as Section, icon: "?", label: "SUPPORT" }];
 
 export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebarProps) {
   const [expanded, setExpanded] = useState<Section>(null);
@@ -29,7 +26,6 @@ export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebar
       side="left"
       open={open}
       onClose={onClose}
-      eyebrow="utility rail"
       title="MENU"
       footer={<UserPanel />}
     >
@@ -44,30 +40,22 @@ export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebar
             >
               <span className="sb-nav-icon">{icon}</span>
               <span className="sb-nav-label">{label}</span>
-              <span className="sb-nav-arrow">{expanded === id ? "∨" : "›"}</span>
+              <span className="sb-nav-arrow">{expanded === id ? "v" : ">"}</span>
             </button>
 
             {expanded === id && (
               <div className="sb-nav-content">
-                {id === "support" && (
-                  <p className="sb-body-copy">
-                    Need help? Review the hints carefully, narrow the likely failure mode,
-                    and submit once the bug category is clear.
-                  </p>
-                )}
-                {id === "changelog" && (
-                  <p className="sb-body-copy">
-                    Sidebar redesigned with user panel, edit profile, and history for
-                    anonymous players. Archive page now works without signing in.
-                  </p>
-                )}
+                <p className="sb-body-copy">
+                  Need help? Review the hints carefully, narrow the likely failure mode,
+                  and submit once the bug category is clear.
+                </p>
               </div>
             )}
           </div>
         ))}
 
         <div className="sb-nav-row sb-nav-row--disabled" aria-disabled="true">
-          <span className="sb-nav-icon">ⓘ</span>
+          <span className="sb-nav-icon">i</span>
           <span className="sb-nav-label">ARCHIVE</span>
           <span className="sb-nav-tag">coming soon</span>
         </div>
@@ -77,7 +65,7 @@ export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebar
         <p className="sb-section-label">appearance</p>
         <div className="sb-appearance-card">
           <span className="sb-appearance-icon" suppressHydrationWarning>
-            {isLight ? "◑" : "◐"}
+            {isLight ? "L" : "D"}
           </span>
           <span className="sb-appearance-mode" suppressHydrationWarning>
             {isLight ? "light mode" : "dark mode"}

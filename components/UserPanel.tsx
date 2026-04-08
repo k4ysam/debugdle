@@ -64,7 +64,7 @@ export function UserPanel() {
       </div>
 
       <div className="sb-cta-row">
-        <div className="sb-cta sb-cta--outline sb-streak-pill" aria-label={streakDisplay.label}>
+        <div className="sb-streak-pill" aria-label={streakDisplay.label}>
           <span className="sb-streak-emoji" aria-hidden="true">
             {streakDisplay.emoji}
           </span>

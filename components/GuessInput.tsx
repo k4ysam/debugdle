@@ -47,6 +47,7 @@ export function GuessInput({ onSubmit, onReveal, canReveal, hintsRevealed, guess
   const [selected, setSelected] = useState<BugType | null>(null);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const rootRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const guessedSet = new Set(guesses);
 
@@ -61,21 +62,29 @@ export function GuessInput({ onSubmit, onReveal, canReveal, hintsRevealed, guess
     setActiveIndex(-1);
   }, []);
 
-  const clearSelection = () => {
+  const clearSelection = useCallback(() => {
     setSelected(null);
     setQuery("");
     setActiveIndex(-1);
     setTimeout(() => inputRef.current?.focus(), 0);
-  };
+  }, []);
+
+  const handleSubmit = useCallback(() => {
+    if (!selected || guessedSet.has(selected.id)) return;
+    onSubmit(selected.id);
+    setSelected(null);
+    setQuery("");
+  }, [guessedSet, onSubmit, selected]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!open) {
-      if (e.key === "ArrowDown" || e.key === "Enter") {
+      if (e.key === "ArrowDown") {
         setOpen(true);
         setActiveIndex(findNextSelectableIndex(results, guessedSet, 0, 1));
       }
       return;
     }
+
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveIndex((i) => {
@@ -99,18 +108,39 @@ export function GuessInput({ onSubmit, onReveal, canReveal, hintsRevealed, guess
     }
   };
 
-  const handleSubmit = () => {
-    if (!selected || guessedSet.has(selected.id)) return;
-    onSubmit(selected.id);
-    setSelected(null);
-    setQuery("");
-  };
+  useEffect(() => {
+    if (!selected || disabled) return;
+
+    const handleSelectedKeys = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) {
+        return;
+      }
+
+      const activeElement = document.activeElement;
+      const withinGuessInput =
+        activeElement === document.body ||
+        (!!rootRef.current && !!activeElement && rootRef.current.contains(activeElement));
+
+      if (!withinGuessInput) return;
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handleSubmit();
+      } else if (event.key === "Backspace") {
+        event.preventDefault();
+        clearSelection();
+      }
+    };
+
+    window.addEventListener("keydown", handleSelectedKeys);
+    return () => window.removeEventListener("keydown", handleSelectedKeys);
+  }, [clearSelection, disabled, handleSubmit, selected]);
 
   const grouped = groupByCategory(results);
-  const revealLabel = canReveal ? `reveal hint ${hintsRevealed + 1} →` : "all hints revealed";
+  const revealLabel = canReveal ? `reveal hint ${hintsRevealed + 1}` : "all hints revealed";
 
   return (
-    <section id="input-area" aria-label="Make a guess">
+    <section ref={rootRef} id="input-area" aria-label="Make a guess">
       <div className="search-wrapper">
         {selected ? (
           <div className="search-selection" aria-live="polite">
@@ -124,7 +154,7 @@ export function GuessInput({ onSubmit, onReveal, canReveal, hintsRevealed, guess
               aria-label="Remove guess"
               type="button"
             >
-              ×
+              x
             </button>
           </div>
         ) : (
@@ -191,6 +221,7 @@ export function GuessInput({ onSubmit, onReveal, canReveal, hintsRevealed, guess
           className="reveal-link"
           onClick={onReveal}
           disabled={!canReveal || disabled}
+          type="button"
         >
           {revealLabel}
         </button>
@@ -198,6 +229,7 @@ export function GuessInput({ onSubmit, onReveal, canReveal, hintsRevealed, guess
           className="submit-btn"
           disabled={!selected || disabled}
           onClick={handleSubmit}
+          type="button"
         >
           [submit]
         </button>
