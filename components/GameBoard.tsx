@@ -12,9 +12,10 @@ import { ResultScreen } from "./ResultScreen";
 
 interface Props {
   scenario: Scenario;
+  puzzleDate?: string; // YYYY-MM-DD — pass for archive replays
 }
 
-export function GameBoard({ scenario }: Props) {
+export function GameBoard({ scenario, puzzleDate }: Props) {
   const { state, revealHint, guess } = useGame(scenario);
   const { hintsRevealed, status, submitted, guesses } = state;
   const canReveal = hintsRevealed < 6 && !submitted;
@@ -29,7 +30,7 @@ export function GameBoard({ scenario }: Props) {
       scenario_id: scenario.id,
       hints_used: hintsRevealed,
       won: status === "won",
-    });
+    }, puzzleDate);
   }, [submitted, user, scenario.id, hintsRevealed, status]);
 
   return (

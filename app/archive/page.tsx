@@ -45,7 +45,7 @@ function formatDate(iso: string): string {
 function PuzzleCard({ entry }: { entry: PuzzleEntry }) {
   const { puzzleNumber, puzzleDate, status } = entry;
   return (
-    <div className={`puzzle-card ${cardMod(status)}`}>
+    <Link href={`/play/${puzzleDate}`} className={`puzzle-card ${cardMod(status)}`}>
       <div className="puzzle-card-top">
         <span className="puzzle-card-num">#{puzzleNumber}</span>
         <span className={`puzzle-card-icon ${iconMod(status)}`}>
@@ -54,7 +54,7 @@ function PuzzleCard({ entry }: { entry: PuzzleEntry }) {
       </div>
       <span className="puzzle-card-date">{formatDate(puzzleDate)}</span>
       <span className="puzzle-card-label">{statusLabel(status)}</span>
-    </div>
+    </Link>
   );
 }
 

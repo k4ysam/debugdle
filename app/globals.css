@@ -1748,3 +1748,22 @@ html.light .submit-btn { color: #1a1816; }
 .puzzle-card--unplayed .puzzle-card-label { color: var(--ink-dim); }
 .puzzle-card--attempted-win .puzzle-card-label  { color: var(--correct); opacity: 0.6; }
 .puzzle-card--attempted-loss .puzzle-card-label { color: var(--wrong); opacity: 0.6; }
+
+/* puzzle-card as link */
+a.puzzle-card { text-decoration: none; cursor: pointer; transition: border-color 0.15s; }
+a.puzzle-card:hover { border-color: var(--accent); }
+
+/* play page meta row */
+.play-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.play-puzzle-id {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--ink-dim);
+  letter-spacing: 0.06em;
+}

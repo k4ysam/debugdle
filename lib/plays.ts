@@ -54,9 +54,10 @@ export async function hasPlayedToday(userId: string | null): Promise<boolean> {
 
 export async function recordPlay(
   userId: string | null,
-  data: Omit<PlayRecord, "played_date">
+  data: Omit<PlayRecord, "played_date">,
+  puzzleDate?: string // override for archive replays; defaults to today
 ): Promise<void> {
-  const played_date = localDate();
+  const played_date = puzzleDate ?? localDate();
   const record: PlayRecord = { ...data, played_date };
 
   if (!userId) {
