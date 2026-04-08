@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { SidebarShell } from "./SidebarShell";
 import { UserPanel } from "./UserPanel";
@@ -11,12 +12,11 @@ type LeftSidebarProps = {
   toggleTheme: () => void;
 };
 
-type Section = "support" | "changelog" | "about" | null;
+type Section = "support" | "changelog" | null;
 
 const NAV = [
   { id: "support" as Section, icon: "?", label: "SUPPORT" },
   { id: "changelog" as Section, icon: "↻", label: "CHANGELOG" },
-  { id: "about" as Section, icon: "ⓘ", label: "ABOUT ARCHIVE" },
 ];
 
 export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebarProps) {
@@ -62,16 +62,16 @@ export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebar
                     anonymous players. Archive page now works without signing in.
                   </p>
                 )}
-                {id === "about" && (
-                  <p className="sb-body-copy">
-                    Debugdle is a daily debugging puzzle for engineers. Read the clues,
-                    trace the failure mode, and commit to a guess before the final hint.
-                  </p>
-                )}
               </div>
             )}
           </div>
         ))}
+
+        <Link className="sb-nav-row" href="/archive" onClick={onClose}>
+          <span className="sb-nav-icon">ⓘ</span>
+          <span className="sb-nav-label">ARCHIVE</span>
+          <span className="sb-nav-arrow">›</span>
+        </Link>
       </nav>
 
       <div className="sb-section">

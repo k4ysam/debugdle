@@ -4,7 +4,6 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import { useGame } from "@/hooks/useGame";
 import { useAuth } from "@/components/AuthProvider";
 import { Scenario } from "@/data/scenarios";
-import { getBugById } from "@/lib/game";
 import { recordPlay } from "@/lib/plays";
 import { HintCard } from "./HintCard";
 import { GuessInput } from "./GuessInput";
@@ -101,23 +100,9 @@ export function GameBoard({ scenario, puzzleDate }: Props) {
             onReveal={revealHint}
             canReveal={canReveal}
             hintsRevealed={hintsRevealed}
+            guesses={guesses}
             disabled={false}
           />
-
-          {/* Wrong guess history */}
-          {guesses.length > 0 && (
-            <ol className="guess-history" aria-label="Guess history">
-              {guesses.map((id, i) => {
-                const bug = getBugById(id);
-                return (
-                  <li key={i} className="guess-history-item">
-                    <span className="guess-num">{i + 1}.</span>
-                    <span>{bug?.label ?? id}</span>
-                  </li>
-                );
-              })}
-            </ol>
-          )}
         </>
       )}
 

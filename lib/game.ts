@@ -28,6 +28,7 @@ export function revealNextHint(state: GameState): GameState {
 
 export function submitGuess(state: GameState, bugId: string): GameState {
   if (state.submitted) return state;
+  if (state.guesses.includes(bugId)) return state;
   const correct = bugId === state.scenario.bugId;
   const newGuesses = [...state.guesses, bugId];
 
