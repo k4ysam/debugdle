@@ -1,60 +1,97 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/components/AuthProvider";
-import { getUserPlays, getLocalPlays, type PlayRecord } from "@/lib/plays";
-import { SCENARIOS } from "@/data/scenarios";
 import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
+import { getArchive, type PuzzleEntry, type PuzzleStatus } from "@/lib/archive";
 
-function scenarioTitle(id: string): string {
-  return SCENARIOS.find((s) => s.id === id)?.title ?? "Unknown puzzle";
+// ── Status helpers ────────────────────────────────────────────────
+
+function statusIcon(s: PuzzleStatus): string {
+  if (s.kind === "unplayed") return "🔒";
+  if (s.kind === "solved")   return s.onTime ? "✓" : "✓";
+  return s.onTime ? "✕" : "✕";
 }
+
+function statusLabel(s: PuzzleStatus): string {
+  if (s.kind === "unplayed") return "unplayed";
+  const suffix = s.onTime ? "" : " (late)";
+  if (s.kind === "solved") return `solved (${s.hintsUsed}/6)${suffix}`;
+  return `failed${suffix}`;
+}
+
+function cardMod(s: PuzzleStatus): string {
+  if (s.kind === "unplayed") return "puzzle-card--unplayed";
+  if (s.kind === "solved" && s.onTime)  return "puzzle-card--solved";
+  if (s.kind === "solved" && !s.onTime) return "puzzle-card--attempted puzzle-card--attempted-win";
+  if (s.kind === "failed" && s.onTime)  return "puzzle-card--failed";
+  return "puzzle-card--attempted puzzle-card--attempted-loss";
+}
+
+function iconMod(s: PuzzleStatus): string {
+  if (s.kind === "unplayed") return "puzzle-icon--unplayed";
+  if (s.kind === "solved")   return "puzzle-icon--solved";
+  return "puzzle-icon--failed";
+}
+
+function formatDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  return `${months[m - 1]} ${String(d).padStart(2, "0")}, ${y}`;
+}
+
+// ── Card ──────────────────────────────────────────────────────────
+
+function PuzzleCard({ entry }: { entry: PuzzleEntry }) {
+  const { puzzleNumber, puzzleDate, status } = entry;
+  return (
+    <div className={`puzzle-card ${cardMod(status)}`}>
+      <div className="puzzle-card-top">
+        <span className="puzzle-card-num">#{puzzleNumber}</span>
+        <span className={`puzzle-card-icon ${iconMod(status)}`}>
+          {statusIcon(status)}
+        </span>
+      </div>
+      <span className="puzzle-card-date">{formatDate(puzzleDate)}</span>
+      <span className="puzzle-card-label">{statusLabel(status)}</span>
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────
 
 export default function ArchivePage() {
   const { user, loading: authLoading } = useAuth();
-  const [plays, setPlays] = useState<PlayRecord[]>([]);
+  const [entries, setEntries] = useState<PuzzleEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
-
-    if (user) {
-      getUserPlays(user.id).then((data) => {
-        setPlays(data);
-        setLoading(false);
-      });
-    } else {
-      setPlays(getLocalPlays());
+    getArchive(user?.id ?? null).then((data) => {
+      setEntries(data);
       setLoading(false);
-    }
+    });
   }, [user, authLoading]);
 
   return (
     <main className="archive-page">
       <div className="archive-header">
         <Link href="/" className="archive-back">← back</Link>
-        <h1 className="archive-title">your debugdles</h1>
+        <h1 className="archive-title">archive</h1>
       </div>
 
       {loading && <p className="archive-empty">loading…</p>}
 
-      {!loading && plays.length === 0 && (
-        <p className="archive-empty">
-          {user ? "no plays yet — go debug something!" : "no plays yet. plays are saved automatically."}
-        </p>
+      {!loading && entries.length === 0 && (
+        <p className="archive-empty">no puzzles in the schedule yet.</p>
       )}
 
-      {!loading && plays.length > 0 && (
-        <ul className="archive-list">
-          {plays.map((play) => (
-            <li key={play.played_date} className={`archive-item ${play.won ? "won" : "lost"}`}>
-              <span className="archive-date">{play.played_date}</span>
-              <span className="archive-scenario">{scenarioTitle(play.scenario_id)}</span>
-              <span className="archive-result">{play.won ? "solved" : "unsolved"}</span>
-              <span className="archive-hints">{play.hints_used} hint{play.hints_used !== 1 ? "s" : ""}</span>
-            </li>
+      {!loading && entries.length > 0 && (
+        <div className="puzzle-grid">
+          {entries.map((entry) => (
+            <PuzzleCard key={entry.puzzleDate} entry={entry} />
           ))}
-        </ul>
+        </div>
       )}
     </main>
   );

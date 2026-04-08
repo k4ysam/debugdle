@@ -1152,7 +1152,8 @@ html.light .submit-btn { color: #1a1816; }
 .auth-panel {
   position: absolute;
   top: calc(100% + 0.75rem);
-  right: 0;
+  left: 100%;
+  transform: translateX(-100%);
   width: 260px;
   background: var(--surface);
   border: 1px solid var(--border-mid);
@@ -1637,3 +1638,113 @@ html.light .submit-btn { color: #1a1816; }
   border-color: var(--ink-muted);
   color: var(--ink);
 }
+
+/* ── Archive puzzle grid ─────────────────────────────────────────── */
+
+.puzzle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+}
+
+.puzzle-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.875rem 0.75rem 0.75rem;
+  border: 1px solid var(--border-mid);
+  background: var(--surface);
+  min-height: 6rem;
+}
+
+/* Status variants */
+.puzzle-card--solved {
+  border-color: var(--border-mid);
+  background: color-mix(in oklab, var(--surface) 80%, var(--bg));
+}
+
+.puzzle-card--failed {
+  border-color: var(--border);
+  background: var(--bg);
+  opacity: 0.7;
+}
+
+.puzzle-card--unplayed {
+  border-color: var(--border);
+  background: var(--bg);
+  opacity: 0.45;
+}
+
+.puzzle-card--attempted {
+  border-color: var(--border-mid);
+  background: var(--surface);
+  opacity: 0.8;
+}
+
+/* Top row: number + icon */
+.puzzle-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.puzzle-card-num {
+  font-family: var(--font-ui);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.puzzle-card--failed .puzzle-card-num,
+.puzzle-card--unplayed .puzzle-card-num {
+  color: var(--ink-muted);
+}
+
+.puzzle-card--attempted .puzzle-card-num {
+  color: var(--ink-muted);
+}
+
+/* Status icon */
+.puzzle-card-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.5rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.puzzle-icon--solved  { color: var(--correct); }
+.puzzle-icon--failed  { color: var(--wrong); }
+.puzzle-icon--unplayed { color: var(--ink-dim); font-size: 0.5625rem; }
+
+/* Date */
+.puzzle-card-date {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+  margin-top: auto;
+}
+
+/* Status label */
+.puzzle-card-label {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.puzzle-card--solved .puzzle-card-label   { color: var(--correct); }
+.puzzle-card--failed .puzzle-card-label   { color: var(--wrong); }
+.puzzle-card--unplayed .puzzle-card-label { color: var(--ink-dim); }
+.puzzle-card--attempted-win .puzzle-card-label  { color: var(--correct); opacity: 0.6; }
+.puzzle-card--attempted-loss .puzzle-card-label { color: var(--wrong); opacity: 0.6; }
