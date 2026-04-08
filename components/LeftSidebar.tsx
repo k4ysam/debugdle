@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { SidebarShell } from "./SidebarShell";
 import { UserPanel } from "./UserPanel";
@@ -67,11 +66,11 @@ export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebar
           </div>
         ))}
 
-        <Link className="sb-nav-row" href="/archive" onClick={onClose}>
+        <div className="sb-nav-row sb-nav-row--disabled" aria-disabled="true">
           <span className="sb-nav-icon">ⓘ</span>
           <span className="sb-nav-label">ARCHIVE</span>
-          <span className="sb-nav-arrow">›</span>
-        </Link>
+          <span className="sb-nav-tag">coming soon</span>
+        </div>
       </nav>
 
       <div className="sb-section">
