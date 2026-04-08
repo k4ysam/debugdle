@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { GameState, getBugById, buildShareText } from "@/lib/game";
 import { SaveStreakPrompt } from "./SaveStreakPrompt";
+import { WinPopup } from "./WinPopup";
 
 interface Props {
   state: GameState;
@@ -22,6 +23,7 @@ function timeUntilMidnight(): string {
 export function ResultScreen({ state }: Props) {
   const [copied, setCopied] = useState(false);
   const [countdown, setCountdown] = useState(timeUntilMidnight());
+  const [showWinPopup, setShowWinPopup] = useState(state.status === "won");
 
   const { scenario, status, guesses, hintsRevealed } = state;
   const won = status === "won";
@@ -61,37 +63,47 @@ export function ResultScreen({ state }: Props) {
     : [scenario.explanation];
 
   return (
-    <section id="result-area" aria-live="polite" aria-label="Result">
-      <p className="result-outcome">{outcomeText}</p>
-
-      {!won && lastWrongBug && (
-        <div className="result-wrong-block">
-          <p className="result-wrong-label">your guess</p>
-          <p className="result-wrong-answer">{lastWrongBug.label}</p>
-        </div>
+    <>
+      {won && (
+        <WinPopup
+          state={state}
+          open={showWinPopup}
+          onClose={() => setShowWinPopup(false)}
+        />
       )}
 
-      <p className="result-answer-label">{correctLabel}</p>
-      <p className="result-answer correct">{correctBug?.label}</p>
+      <section id="result-area" aria-live="polite" aria-label="Result">
+        <p className="result-outcome">{outcomeText}</p>
 
-      <hr className="result-divider" />
+        {!won && lastWrongBug && (
+          <div className="result-wrong-block">
+            <p className="result-wrong-label">your guess</p>
+            <p className="result-wrong-answer">{lastWrongBug.label}</p>
+          </div>
+        )}
 
-      <div className="result-explanation">
-        {explanationParts.map((p, i) => (
-          <p key={i}>{p}</p>
-        ))}
-      </div>
+        <p className="result-answer-label">{correctLabel}</p>
+        <p className="result-answer correct">{correctBug?.label}</p>
 
-      <div className="result-actions">
-        <button className="copy-btn" onClick={handleCopy}>
-          {copied ? "[ copied! ]" : "[ copy result ]"}
-        </button>
-        <p className="countdown" aria-live="off">
-          next puzzle in {countdown}
-        </p>
-      </div>
+        <hr className="result-divider" />
 
-      <SaveStreakPrompt />
-    </section>
+        <div className="result-explanation">
+          {explanationParts.map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
+        </div>
+
+        <div className="result-actions">
+          <button className="copy-btn" onClick={handleCopy}>
+            {copied ? "[ copied! ]" : "[ copy result ]"}
+          </button>
+          <p className="countdown" aria-live="off">
+            next puzzle in {countdown}
+          </p>
+        </div>
+
+        <SaveStreakPrompt />
+      </section>
+    </>
   );
 }
