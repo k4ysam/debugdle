@@ -34,20 +34,21 @@ export function SidebarShell({
     >
       <div className="sidebar-rail-inner">
         <div className="sidebar-rail-header">
-          <div>
-            {eyebrow ? <p className="sidebar-rail-eyebrow">{eyebrow}</p> : null}
-            <h2 className="sidebar-rail-title">{title}</h2>
-          </div>
+          {eyebrow ? <p className="sidebar-rail-eyebrow">{eyebrow}</p> : null}
           <button
             className="sidebar-rail-close"
             onClick={onClose}
             aria-label={`Close ${title}`}
             type="button"
           >
-            close
+            ✕
           </button>
         </div>
+
+        <h2 className="sidebar-rail-title">{title}</h2>
+
         <div className="sidebar-rail-body">{children}</div>
+
         {footer ? <div className="sidebar-rail-footer">{footer}</div> : null}
       </div>
     </aside>

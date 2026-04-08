@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { useStreak } from "@/hooks/useStreak";
 import { useAuthPanel } from "@/context/AuthPanelContext";
@@ -12,64 +12,66 @@ export function UserPanel() {
   const streak = useStreak();
   const { setOpen: openAuthPanel } = useAuthPanel();
   const [editing, setEditing] = useState(false);
+  const router = useRouter();
 
-  if (!user) {
-    return (
-      <div className="user-panel">
-        <div className="user-avatar user-avatar--guest">?</div>
-        <div className="user-panel-info">
-          <span className="user-panel-name">guest</span>
-          <div className="user-panel-meta">
-            <Link href="/archive" className="user-history-link">history</Link>
-            <span className="user-panel-sep">·</span>
-            <button
-              className="user-signin-link"
-              onClick={() => openAuthPanel(true)}
-            >
-              sign in →
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const avatar = user.user_metadata?.avatar as string | undefined;
-  const displayName =
-    (user.user_metadata?.display_name as string | undefined) ??
-    user.email?.[0]?.toUpperCase() ??
-    "?";
-  const initial = (user.email?.[0] ?? "?").toUpperCase();
-
-  if (editing) {
+  if (editing && user) {
     return <EditProfileForm onClose={() => setEditing(false)} />;
   }
 
+  const avatar = user?.user_metadata?.avatar as string | undefined;
+  const displayName =
+    (user?.user_metadata?.display_name as string | undefined) ??
+    user?.email?.[0]?.toUpperCase() ??
+    null;
+
   return (
-    <div className="user-panel">
-      <div className="user-avatar">{avatar || initial}</div>
-      <div className="user-panel-info">
-        <span className="user-panel-name">{displayName}</span>
-        <div className="user-panel-meta">
-          {streak > 0 && (
-            <>
-              <span className="user-streak">🔥 {streak}</span>
-              <span className="user-panel-sep">·</span>
-            </>
-          )}
-          <Link href="/archive" className="user-history-link">history</Link>
-          <span className="user-panel-sep">·</span>
-          <button className="user-signout-link" onClick={signOut}>out</button>
+    <div className="sb-user-panel">
+      {/* Identity row */}
+      <div className="sb-identity">
+        <div className="sb-identity-avatar">
+          {user ? (avatar || (user.email?.[0] ?? "?").toUpperCase()) : "◯"}
         </div>
+        <div className="sb-identity-info">
+          <span className="sb-identity-name">
+            {user ? (displayName ?? "user") : "Terminal_Guest"}
+          </span>
+          <span className="sb-identity-status">
+            {user
+              ? streak > 0 ? `🔥 ${streak} day streak` : "active"
+              : "unauthorized"}
+          </span>
+        </div>
+        {user && (
+          <button
+            className="sb-identity-edit"
+            onClick={() => setEditing(true)}
+            aria-label="Edit profile"
+            title="Edit profile"
+          >
+            ✏
+          </button>
+        )}
       </div>
-      <button
-        className="user-edit-btn"
-        onClick={() => setEditing(true)}
-        aria-label="Edit profile"
-        title="Edit profile"
-      >
-        ✏
-      </button>
+
+      {/* CTA button */}
+      {user ? (
+        <div className="sb-cta-row">
+          <button
+            className="sb-cta sb-cta--outline"
+            onClick={() => router.push("/archive")}
+          >
+            view history
+          </button>
+          <button className="sb-cta-signout" onClick={signOut}>sign out</button>
+        </div>
+      ) : (
+        <button
+          className="sb-cta"
+          onClick={() => openAuthPanel(true)}
+        >
+          sign in to archive
+        </button>
+      )}
     </div>
   );
 }

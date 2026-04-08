@@ -11,10 +11,24 @@ type LeftSidebarProps = {
   toggleTheme: () => void;
 };
 
-type SidebarTab = "help" | "changelog" | "about";
+type Section = "support" | "changelog" | "about" | null;
+
+const NAV = [
+  { id: "support" as Section,   icon: "?",  label: "SUPPORT"       },
+  { id: "changelog" as Section, icon: "↻",  label: "CHANGELOG"     },
+  { id: "about" as Section,     icon: "ⓘ",  label: "ABOUT ARCHIVE" },
+];
+
+const STEPS = [
+  { n: "01", title: "Read the hints",       sub: "INITIAL ASSESSMENT PHASE"  },
+  { n: "02", title: "Search for a bug type", sub: "DIAGNOSTIC PROCEDURE"     },
+  { n: "03", title: "Submit when confident", sub: "COMMIT TO DIAGNOSIS"      },
+];
 
 export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebarProps) {
-  const [activeTab, setActiveTab] = useState<SidebarTab>("help");
+  const [expanded, setExpanded] = useState<Section>(null);
+
+  const toggle = (id: Section) => setExpanded((prev) => (prev === id ? null : id));
 
   return (
     <SidebarShell
@@ -23,92 +37,88 @@ export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebar
       open={open}
       onClose={onClose}
       eyebrow="utility rail"
-      title="menu"
+      title="MENU"
       footer={<UserPanel />}
     >
-      {/* Theme toggle */}
-      <div className="sidebar-theme-row">
-        <span className="sidebar-theme-label">appearance</span>
-        <button
-          className="sidebar-theme-btn"
-          onClick={toggleTheme}
-          aria-label="Toggle light or dark mode"
-          type="button"
-        >
-          <span suppressHydrationWarning>{isLight ? "☾ dark" : "☀ light"}</span>
-        </button>
-      </div>
+      {/* Nav rows */}
+      <nav className="sb-nav" aria-label="Sidebar navigation">
+        {NAV.map(({ id, icon, label }) => (
+          <div key={id}>
+            <button
+              className={`sb-nav-row${expanded === id ? " sb-nav-row--open" : ""}`}
+              onClick={() => toggle(id)}
+              aria-expanded={expanded === id}
+              type="button"
+            >
+              <span className="sb-nav-icon">{icon}</span>
+              <span className="sb-nav-label">{label}</span>
+              <span className="sb-nav-arrow">{expanded === id ? "∨" : "›"}</span>
+            </button>
 
-      {/* Nav tabs */}
-      <div className="sidebar-tabs" role="tablist" aria-label="Menu sections">
-        {(["help", "changelog", "about"] as SidebarTab[]).map((tab) => (
+            {expanded === id && (
+              <div className="sb-nav-content">
+                {id === "support" && (
+                  <p className="sb-body-copy">
+                    Need help? Read the deployment protocol below — it covers everything
+                    you need to diagnose a bug from scratch.
+                  </p>
+                )}
+                {id === "changelog" && (
+                  <p className="sb-body-copy">
+                    Sidebar redesigned with user panel, edit profile, and history for
+                    anonymous players. Archive page now works without signing in.
+                  </p>
+                )}
+                {id === "about" && (
+                  <p className="sb-body-copy">
+                    Debugdle is a daily debugging puzzle for engineers. Read the clues,
+                    trace the failure mode, and commit to a guess before the final hint.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </nav>
+
+      {/* Appearance */}
+      <div className="sb-section">
+        <p className="sb-section-label">appearance</p>
+        <div className="sb-appearance-card">
+          <span className="sb-appearance-icon" suppressHydrationWarning>
+            {isLight ? "◑" : "◐"}
+          </span>
+          <span className="sb-appearance-mode" suppressHydrationWarning>
+            {isLight ? "light mode" : "dark mode"}
+          </span>
           <button
-            key={tab}
-            className={`sidebar-tab${activeTab === tab ? " active" : ""}`}
-            onClick={() => setActiveTab(tab)}
-            role="tab"
-            aria-selected={activeTab === tab}
+            className={`sb-toggle${isLight ? " sb-toggle--on" : ""}`}
+            onClick={toggleTheme}
+            role="switch"
+            aria-checked={isLight}
+            aria-label="Toggle light mode"
             type="button"
           >
-            {tab}
+            <span className="sb-toggle-thumb" />
           </button>
-        ))}
+        </div>
       </div>
 
-      {activeTab === "help" && (
-        <div className="htp-steps">
-          <div className="htp-step">
-            <span className="htp-num">1</span>
-            <div>
-              <p className="htp-step-title">Read the hints</p>
-              <p className="htp-step-desc">
-                Each puzzle reveals up to 6 hints, one at a time. Every hint narrows
-                the bug category before you commit to a guess.
-              </p>
+      {/* Deployment protocol */}
+      <div className="sb-section">
+        <p className="sb-section-label">deployment protocol</p>
+        <div className="sb-steps">
+          {STEPS.map(({ n, title, sub }) => (
+            <div key={n} className="sb-step">
+              <span className="sb-step-n">{n}</span>
+              <div>
+                <p className="sb-step-title">{title}</p>
+                <p className="sb-step-sub">{sub}</p>
+              </div>
             </div>
-          </div>
-          <div className="htp-step">
-            <span className="htp-num">2</span>
-            <div>
-              <p className="htp-step-title">Search for a bug type</p>
-              <p className="htp-step-desc">
-                Use the input to filter canonical bug categories. Arrow keys move
-                through results and Enter confirms the selection.
-              </p>
-            </div>
-          </div>
-          <div className="htp-step">
-            <span className="htp-num">3</span>
-            <div>
-              <p className="htp-step-title">Submit when confident</p>
-              <p className="htp-step-desc">
-                Wrong guesses reveal the next hint automatically. Fewer hints used
-                means a better solve, and a fresh puzzle arrives daily.
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
-      )}
-
-      {activeTab === "changelog" && (
-        <section className="sidebar-section">
-          <p className="sidebar-section-label">changelog</p>
-          <p className="sidebar-section-copy">
-            The shell now supports a single utility rail so supporting context stays
-            in one place without splitting attention across both sides of the page.
-          </p>
-        </section>
-      )}
-
-      {activeTab === "about" && (
-        <section className="sidebar-section">
-          <p className="sidebar-section-label">about</p>
-          <p className="sidebar-section-copy">
-            Debugdle is a daily debugging puzzle for engineers. Read the clues, trace
-            the failure mode, and commit to a guess before the final hint.
-          </p>
-        </section>
-      )}
+      </div>
     </SidebarShell>
   );
 }
