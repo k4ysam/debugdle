@@ -22,8 +22,8 @@
   --font-mono:     var(--font-space-mono), 'Courier New', monospace;
 
   --row-h:         56px;
-  --max-w:         680px;
-  --pad-h:         clamp(1.25rem, 5vw, 3.5rem);
+  --max-w:         760px;
+  --pad-h:         clamp(1.25rem, 4vw, 3.75rem);
   --rail-w:        min(24vw, 20rem);
   --rail-bg:       color-mix(in oklab, var(--surface) 92%, var(--bg));
   --rail-shadow:   0 0 0 1px var(--border), 0 20px 48px rgb(0 0 0 / 0.24);
@@ -240,9 +240,9 @@ ul, ol { list-style: none; padding: 0; margin: 0; }
 
 .scenario-title {
   font-family: var(--font-ui);
-  font-size: 1.0625rem;
+  font-size: 1.1875rem;
   font-weight: 600;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
   color: var(--ink);
   margin-bottom: 1.875rem;
 }
@@ -541,7 +541,7 @@ ul, ol { list-style: none; padding: 0; margin: 0; }
   font-size: 0.9375rem;
   line-height: 1.72;
   color: var(--ink-muted);
-  max-width: 58ch;
+  max-width: 64ch;
   margin-bottom: 2rem;
 }
 
@@ -1272,6 +1272,62 @@ html.light {
 }
 
 html.light .submit-btn { color: #1a1816; }
+
+@media (min-width: 1100px) {
+  :root {
+    --max-w: 900px;
+    --pad-h: clamp(2rem, 4vw, 5rem);
+  }
+
+  .site-header {
+    padding: 2.5rem 0 1.125rem;
+  }
+
+  .logo {
+    font-size: 1.3125rem;
+  }
+
+  .header-right {
+    gap: 1.5rem;
+  }
+
+  .menu-btn,
+  .streak,
+  .archive-link {
+    font-size: 0.875rem;
+  }
+
+  .menu-btn {
+    gap: 0.25rem;
+  }
+
+  .menu-btn span {
+    width: 0.95rem;
+  }
+
+  .auth-icon-btn {
+    width: 2.125rem;
+    height: 2.125rem;
+    font-size: 0.9375rem;
+  }
+
+  .scenario-title {
+    font-size: 1.5rem;
+    margin-bottom: 2.125rem;
+  }
+
+  .hint-row {
+    grid-template-columns: 5rem 1fr;
+    gap: 1.625rem;
+  }
+
+  .hint-text,
+  .search-input,
+  .dropdown-item,
+  .result-explanation {
+    font-size: 0.875rem;
+  }
+}
 
 /* ================================================================
    MOBILE
