@@ -6,6 +6,7 @@ export interface PlayRecord {
   scenario_id: string;
   hints_used: number;
   won: boolean;
+  difficulty: "daily" | "hard";
 }
 
 const LS_KEY = "debugdle_plays";
@@ -31,15 +32,18 @@ function saveLocalPlays(plays: PlayRecord[]): void {
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
-export function hasPlayedTodayLocally(): boolean {
+export function hasPlayedTodayLocally(difficulty: "daily" | "hard" = "daily"): boolean {
   const today = localDate();
-  return getLocalPlays().some((p) => p.played_date === today);
+  return getLocalPlays().some((p) => p.played_date === today && p.difficulty === difficulty);
 }
 
-export async function hasPlayedToday(userId: string | null): Promise<boolean> {
+export async function hasPlayedToday(
+  userId: string | null,
+  difficulty: "daily" | "hard" = "daily"
+): Promise<boolean> {
   const today = localDate();
 
-  if (!userId) return hasPlayedTodayLocally();
+  if (!userId) return hasPlayedTodayLocally(difficulty);
 
   const supabase = createClient();
   const { data } = await supabase
@@ -47,6 +51,7 @@ export async function hasPlayedToday(userId: string | null): Promise<boolean> {
     .select("id")
     .eq("user_id", userId)
     .eq("played_date", today)
+    .eq("difficulty", difficulty)
     .maybeSingle();
 
   return !!data;
@@ -76,8 +81,9 @@ export async function recordPlay(
       scenario_id: record.scenario_id,
       hints_used: record.hints_used,
       won: record.won,
+      difficulty: record.difficulty,
     },
-    { onConflict: "user_id,played_date", ignoreDuplicates: true }
+    { onConflict: "user_id,played_date,difficulty", ignoreDuplicates: true }
   );
   window.dispatchEvent(new CustomEvent(PLAY_RECORDED_EVENT));
 }

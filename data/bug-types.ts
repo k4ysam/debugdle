@@ -12,11 +12,12 @@ export interface BugType {
   id: string;
   label: string;
   category: BugCategory;
+  aliases?: string[]; // plain-language synonyms — searchable but not displayed
 }
 
 export const BUG_TYPES: BugType[] = [
   // Async / Timing
-  { id: "ASYNC_RACE_CONDITION", label: "Async race condition", category: "async" },
+  { id: "ASYNC_RACE_CONDITION", label: "Async race condition", category: "async", aliases: ["double submit", "two requests at once", "concurrent requests", "submitted twice", "duplicate charge", "race", "two simultaneous", "button clicked twice", "form submitted twice"] },
   { id: "MISSING_AWAIT", label: "Missing await", category: "async" },
   { id: "PROMISE_NOT_HANDLED", label: "Promise not handled", category: "async" },
   { id: "EVENT_LOOP_BLOCKING", label: "Event loop blocking", category: "async" },
@@ -27,7 +28,7 @@ export const BUG_TYPES: BugType[] = [
   { id: "TIMEOUT_NOT_CLEARED", label: "Timeout not cleared", category: "async" },
   { id: "DEBOUNCE_MISSING", label: "Missing debounce / throttle", category: "async" },
   { id: "CONCURRENT_MUTATION", label: "Concurrent state mutation", category: "async" },
-  { id: "STALE_CLOSURE", label: "Stale closure in async callback", category: "async" },
+  { id: "STALE_CLOSURE", label: "Stale closure in async callback", category: "async", aliases: ["old value captured", "captured value", "useCallback not updating", "closure locked", "handler reads wrong value", "count stuck", "state not updating in callback", "stale state", "frozen value"] },
 
   // Frontend / React
   { id: "STATE_NOT_UPDATING", label: "State not updating", category: "frontend" },
@@ -35,7 +36,7 @@ export const BUG_TYPES: BugType[] = [
   { id: "MISSING_DEPENDENCY", label: "Missing dependency in useEffect", category: "frontend" },
   { id: "INCORRECT_CONDITIONAL_RENDER", label: "Incorrect conditional rendering", category: "frontend" },
   { id: "STALE_PROPS", label: "Stale props in event handler", category: "frontend" },
-  { id: "KEY_PROP_MISSING", label: "Missing key prop in list", category: "frontend" },
+  { id: "KEY_PROP_MISSING", label: "Missing key prop in list", category: "frontend", aliases: ["key index", "index as key", "wrong key", "react key", "form reset on tab switch", "input clearing", "component unmounting", "unstable key", "key={index}", "key prop"] },
   { id: "HYDRATION_MISMATCH", label: "SSR hydration mismatch", category: "frontend" },
   { id: "CONTEXT_NOT_PROVIDED", label: "Context provider missing", category: "frontend" },
   { id: "REF_NULL_ACCESS", label: "Ref accessed before mount", category: "frontend" },
@@ -44,7 +45,7 @@ export const BUG_TYPES: BugType[] = [
   { id: "CSS_SPECIFICITY", label: "CSS specificity conflict", category: "frontend" },
   { id: "LAYOUT_SHIFT", label: "Cumulative layout shift (CLS)", category: "frontend" },
   { id: "FONT_FLASH", label: "Flash of unstyled content (FOUC)", category: "frontend" },
-  { id: "Z_INDEX_STACKING", label: "Z-index stacking context issue", category: "frontend" },
+  { id: "Z_INDEX_STACKING", label: "Z-index stacking context issue", category: "frontend", aliases: ["z-index not working", "tooltip hidden", "element behind modal", "stacking context", "transform z-index", "portal", "tooltip invisible", "z-index ignored", "element buried"] },
   { id: "OVERFLOWING_CONTAINER", label: "Overflowing container", category: "frontend" },
 
   // Backend / Server
@@ -57,7 +58,7 @@ export const BUG_TYPES: BugType[] = [
   { id: "SESSION_NOT_PERSISTED", label: "Session not persisted", category: "backend" },
   { id: "AUTH_BYPASS", label: "Auth check bypassed", category: "backend" },
   { id: "CIRCULAR_DEPENDENCY", label: "Circular module dependency", category: "backend" },
-  { id: "ENV_VAR_MISSING", label: "Missing environment variable", category: "backend" },
+  { id: "ENV_VAR_MISSING", label: "Missing environment variable", category: "backend", aliases: ["missing secret", "env not set", "process.env undefined", "config missing", "jwt secret missing", "environment not configured", "secret not deployed", "undefined env var"] },
   { id: "WRONG_HTTP_METHOD", label: "Wrong HTTP method used", category: "backend" },
   { id: "RESPONSE_SENT_TWICE", label: "Response sent twice", category: "backend" },
   { id: "STREAMING_NOT_FLUSHED", label: "Response stream not flushed", category: "backend" },
@@ -65,14 +66,14 @@ export const BUG_TYPES: BugType[] = [
   { id: "CONTENT_TYPE_WRONG", label: "Wrong Content-Type header", category: "backend" },
 
   // Data / Database
-  { id: "N_PLUS_ONE_QUERY", label: "N+1 query problem", category: "data" },
+  { id: "N_PLUS_ONE_QUERY", label: "N+1 query problem", category: "data", aliases: ["too many queries", "querying in a loop", "query per item", "loop query", "query inside loop", "one query per row", "n plus one", "1+n", "database loop", "multiple queries for list"] },
   { id: "MISSING_INDEX", label: "Missing database index", category: "data" },
-  { id: "STALE_CACHE", label: "Stale cache data", category: "data" },
+  { id: "STALE_CACHE", label: "Stale cache data", category: "data", aliases: ["old cached data", "cache not invalidated", "cache not cleared", "redis stale", "ttl too long", "cached response", "cache after deploy", "outdated cache"] },
   { id: "TRANSACTION_NOT_COMMITTED", label: "Transaction not committed", category: "data" },
   { id: "DEADLOCK", label: "Database deadlock", category: "data" },
   { id: "SCHEMA_MISMATCH", label: "Schema mismatch / migration missing", category: "data" },
   { id: "NULL_NOT_HANDLED", label: "Null value not handled", category: "data" },
-  { id: "ENCODING_MISMATCH", label: "Character encoding mismatch", category: "data" },
+  { id: "ENCODING_MISMATCH", label: "Character encoding mismatch", category: "data", aliases: ["garbled text", "mojibake", "utf8 latin1", "special characters broken", "accents not working", "é garbled", "charset mismatch", "unicode broken", "character set wrong"] },
   { id: "PAGINATION_OFF_BY_ONE", label: "Pagination off-by-one", category: "data" },
   { id: "SOFT_DELETE_LEAK", label: "Soft-deleted records leaking", category: "data" },
   { id: "TIMEZONE_MISMATCH", label: "Timezone mismatch in queries", category: "data" },
@@ -87,13 +88,13 @@ export const BUG_TYPES: BugType[] = [
   { id: "PORT_ALREADY_IN_USE", label: "Port already in use", category: "infra" },
   { id: "FIREWALL_BLOCK", label: "Firewall blocking connection", category: "infra" },
   { id: "LOAD_BALANCER_STICKY", label: "Load balancer sticky session issue", category: "infra" },
-  { id: "CDN_CACHE_STALE", label: "CDN serving stale asset", category: "infra" },
+  { id: "CDN_CACHE_STALE", label: "CDN serving stale asset", category: "infra", aliases: ["cdn caching api", "cdn ttl", "cached api response", "old data from cdn", "cache-control missing", "cdn serving old content", "ttl too long cdn", "dynamic route cached", "cdn stale"] },
   { id: "DISK_FULL", label: "Disk space exhausted", category: "infra" },
   { id: "PROCESS_OOM", label: "Out of memory (OOM) kill", category: "infra" },
   { id: "HEALTH_CHECK_FAILING", label: "Health check failing silently", category: "infra" },
   { id: "PROXY_TIMEOUT", label: "Reverse proxy timeout", category: "infra" },
   { id: "ENV_PROD_VS_STAGING", label: "Wrong environment config (prod vs staging)", category: "infra" },
-  { id: "CONTAINER_RESTART_LOOP", label: "Container restart loop (CrashLoopBackOff)", category: "infra" },
+  { id: "CONTAINER_RESTART_LOOP", label: "Container restart loop (CrashLoopBackOff)", category: "infra", aliases: ["kubernetes restart", "crashloopbackoff", "liveness probe killing pod", "pod restarting", "cron job running multiple times", "job ran twice", "pod killed mid job", "k8s restart", "probe killing job"] },
 
   // Memory / Resources
   { id: "MEMORY_LEAK", label: "Memory leak", category: "memory" },
@@ -102,7 +103,7 @@ export const BUG_TYPES: BugType[] = [
   { id: "REFERENCE_NOT_RELEASED", label: "Object reference not released", category: "memory" },
   { id: "BUFFER_OVERFLOW", label: "Buffer overflow", category: "memory" },
   { id: "CIRCULAR_REFERENCE", label: "Circular reference in JSON", category: "memory" },
-  { id: "LARGE_PAYLOAD", label: "Oversized payload in memory", category: "memory" },
+  { id: "LARGE_PAYLOAD", label: "Oversized payload in memory", category: "memory", aliases: ["file read into memory", "buffer in memory", "streaming not used", "readFileSync upload", "oom upload", "entire file in ram", "no streaming", "file buffered", "large file crash"] },
   { id: "FILE_HANDLE_NOT_CLOSED", label: "File handle not closed", category: "memory" },
   { id: "CONNECTION_POOL_EXHAUSTED", label: "Database connection pool exhausted", category: "memory" },
   { id: "STREAM_NOT_CONSUMED", label: "Stream not consumed / backpressure", category: "memory" },

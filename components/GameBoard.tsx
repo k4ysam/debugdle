@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import { useGame } from "@/hooks/useGame";
 import { useAuth } from "@/components/AuthProvider";
 import { Scenario } from "@/data/scenarios";
+import { getBugById } from "@/lib/game";
 import { recordPlay } from "@/lib/plays";
 import { HintCard } from "./HintCard";
 import { HintMascot } from "./HintMascot";
@@ -13,11 +14,13 @@ import { ResultScreen } from "./ResultScreen";
 interface Props {
   scenario: Scenario;
   puzzleDate?: string; // YYYY-MM-DD — pass for archive replays
+  isHard?: boolean;
 }
 
-export function GameBoard({ scenario, puzzleDate }: Props) {
+export function GameBoard({ scenario, puzzleDate, isHard }: Props) {
   const { state, revealHint, guess } = useGame(scenario);
   const { hintsRevealed, status, submitted, guesses } = state;
+  const correctCategory = getBugById(scenario.bugId)?.category;
   const canReveal = hintsRevealed < 6 && !submitted;
   const { user } = useAuth();
   const recordedRef = useRef(false);
@@ -76,13 +79,16 @@ export function GameBoard({ scenario, puzzleDate }: Props) {
       scenario_id: scenario.id,
       hints_used: hintsRevealed,
       won: status === "won",
+      difficulty: isHard ? "hard" : "daily",
     }, puzzleDate);
   }, [submitted, user, scenario.id, hintsRevealed, status, puzzleDate]);
 
   return (
     <>
       <section className="scenario-section" aria-labelledby="scenario-title">
-        <p className="scenario-label">{puzzleDate ? "archived scenario" : "today's scenario"}</p>
+        <p className="scenario-label">
+          {puzzleDate ? "archived scenario" : isHard ? "today's hard scenario" : "today's scenario"}
+        </p>
         <div className="scenario-title-row">
           <h1 id="scenario-title" className="scenario-title">{scenario.title}</h1>
           <HintMascot hintsRevealed={hintsRevealed} status={status} />
@@ -111,13 +117,14 @@ export function GameBoard({ scenario, puzzleDate }: Props) {
             canReveal={canReveal}
             hintsRevealed={hintsRevealed}
             guesses={guesses}
+            correctCategory={correctCategory}
             disabled={false}
           />
         </>
       )}
 
       {/* Result — shown after game ends */}
-      {submitted && <ResultScreen state={state} />}
+      {submitted && <ResultScreen state={state} isHard={isHard} isArchive={!!puzzleDate} />}
     </>
   );
 }

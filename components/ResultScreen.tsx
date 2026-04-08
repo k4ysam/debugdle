@@ -7,6 +7,8 @@ import { WinPopup } from "./WinPopup";
 
 interface Props {
   state: GameState;
+  isHard?: boolean;
+  isArchive?: boolean;
 }
 
 function timeUntilMidnight(): string {
@@ -20,7 +22,7 @@ function timeUntilMidnight(): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-export function ResultScreen({ state }: Props) {
+export function ResultScreen({ state, isHard, isArchive }: Props) {
   const [copied, setCopied] = useState(false);
   const [countdown, setCountdown] = useState(timeUntilMidnight());
   const [showWinPopup, setShowWinPopup] = useState(state.status === "won");
@@ -91,12 +93,34 @@ export function ResultScreen({ state }: Props) {
           {explanationParts.map((p, i) => (
             <p key={i}>{p}</p>
           ))}
+          {scenario.source && (
+            <p className="result-source">
+              {scenario.source.type === "inspired_by" ? "inspired by" : "from"}{" "}
+              {scenario.source.url ? (
+                <a
+                  href={scenario.source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="result-source-link"
+                >
+                  {scenario.source.label}
+                </a>
+              ) : (
+                scenario.source.label
+              )}{" →"}
+            </p>
+          )}
         </div>
 
         <div className="result-actions">
           <button className="copy-btn" onClick={handleCopy}>
             {copied ? "[ copied! ]" : "[ copy result ]"}
           </button>
+          {!isHard && !isArchive && (
+            <a href="/hard" className="hard-nudge">
+              [ try the hard one ]
+            </a>
+          )}
           <p className="countdown" aria-live="off">
             next puzzle in {countdown}
           </p>

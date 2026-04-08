@@ -45,7 +45,7 @@ export function submitGuess(state: GameState, bugId: string): GameState {
   return { ...state, guesses: newGuesses, submitted: true, status: "lost" };
 }
 
-// Fuzzy search over canonical bug types
+// Fuzzy search over canonical bug types (label, id, category, and plain-language aliases)
 export function searchBugTypes(query: string): BugType[] {
   if (!query.trim()) return BUG_TYPES.slice(0, 8);
   const q = query.toLowerCase();
@@ -53,7 +53,8 @@ export function searchBugTypes(query: string): BugType[] {
     (b) =>
       b.label.toLowerCase().includes(q) ||
       b.id.toLowerCase().includes(q) ||
-      b.category.toLowerCase().includes(q)
+      b.category.toLowerCase().includes(q) ||
+      b.aliases?.some((a) => a.toLowerCase().includes(q))
   ).slice(0, 8);
 }
 

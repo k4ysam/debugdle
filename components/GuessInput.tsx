@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { BugType, CATEGORY_LABELS, BugCategory } from "@/data/bug-types";
+import { BugType, BUG_TYPES, CATEGORY_LABELS, BugCategory } from "@/data/bug-types";
 import { searchBugTypes } from "@/lib/game";
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
   canReveal: boolean;
   hintsRevealed: number;
   guesses: string[];
+  correctCategory?: BugCategory;
   disabled?: boolean;
 }
 
@@ -41,7 +42,7 @@ function findNextSelectableIndex(
   return -1;
 }
 
-export function GuessInput({ onSubmit, onReveal, canReveal, hintsRevealed, guesses, disabled }: Props) {
+export function GuessInput({ onSubmit, onReveal, canReveal, hintsRevealed, guesses, correctCategory, disabled }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<BugType[]>([]);
   const [selected, setSelected] = useState<BugType | null>(null);
@@ -139,6 +140,12 @@ export function GuessInput({ onSubmit, onReveal, canReveal, hintsRevealed, guess
   const grouped = groupByCategory(results);
   const revealLabel = canReveal ? `reveal hint ${hintsRevealed + 1}` : "all hints revealed";
 
+  // Check if the last guess was in the right category
+  const lastGuessId = guesses.length > 0 ? guesses[guesses.length - 1] : null;
+  const lastGuessCategory = lastGuessId ? BUG_TYPES.find((b) => b.id === lastGuessId)?.category : null;
+  const lastGuessInRightCategory =
+    correctCategory && lastGuessCategory && lastGuessCategory === correctCategory;
+
   return (
     <section ref={rootRef} id="input-area" aria-label="Make a guess">
       <div className="search-wrapper">
@@ -215,6 +222,15 @@ export function GuessInput({ onSubmit, onReveal, canReveal, hintsRevealed, guess
           </ul>
         )}
       </div>
+
+      {lastGuessInRightCategory && (
+        <p className="category-hint" aria-live="polite">
+          right area — it&apos;s in{" "}
+          <span className="category-hint-name">
+            {CATEGORY_LABELS[lastGuessCategory!]}
+          </span>
+        </p>
+      )}
 
       <div className="actions">
         <button
