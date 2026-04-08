@@ -14,15 +14,9 @@ type LeftSidebarProps = {
 type Section = "support" | "changelog" | "about" | null;
 
 const NAV = [
-  { id: "support" as Section,   icon: "?",  label: "SUPPORT"       },
-  { id: "changelog" as Section, icon: "↻",  label: "CHANGELOG"     },
-  { id: "about" as Section,     icon: "ⓘ",  label: "ABOUT ARCHIVE" },
-];
-
-const STEPS = [
-  { n: "01", title: "Read the hints",       sub: "INITIAL ASSESSMENT PHASE"  },
-  { n: "02", title: "Search for a bug type", sub: "DIAGNOSTIC PROCEDURE"     },
-  { n: "03", title: "Submit when confident", sub: "COMMIT TO DIAGNOSIS"      },
+  { id: "support" as Section, icon: "?", label: "SUPPORT" },
+  { id: "changelog" as Section, icon: "↻", label: "CHANGELOG" },
+  { id: "about" as Section, icon: "ⓘ", label: "ABOUT ARCHIVE" },
 ];
 
 export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebarProps) {
@@ -40,7 +34,6 @@ export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebar
       title="MENU"
       footer={<UserPanel />}
     >
-      {/* Nav rows */}
       <nav className="sb-nav" aria-label="Sidebar navigation">
         {NAV.map(({ id, icon, label }) => (
           <div key={id}>
@@ -59,8 +52,8 @@ export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebar
               <div className="sb-nav-content">
                 {id === "support" && (
                   <p className="sb-body-copy">
-                    Need help? Read the deployment protocol below — it covers everything
-                    you need to diagnose a bug from scratch.
+                    Need help? Review the hints carefully, narrow the likely failure mode,
+                    and submit once the bug category is clear.
                   </p>
                 )}
                 {id === "changelog" && (
@@ -81,7 +74,6 @@ export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebar
         ))}
       </nav>
 
-      {/* Appearance */}
       <div className="sb-section">
         <p className="sb-section-label">appearance</p>
         <div className="sb-appearance-card">
@@ -101,22 +93,6 @@ export function LeftSidebar({ open, onClose, isLight, toggleTheme }: LeftSidebar
           >
             <span className="sb-toggle-thumb" />
           </button>
-        </div>
-      </div>
-
-      {/* Deployment protocol */}
-      <div className="sb-section">
-        <p className="sb-section-label">deployment protocol</p>
-        <div className="sb-steps">
-          {STEPS.map(({ n, title, sub }) => (
-            <div key={n} className="sb-step">
-              <span className="sb-step-n">{n}</span>
-              <div>
-                <p className="sb-step-title">{title}</p>
-                <p className="sb-step-sub">{sub}</p>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </SidebarShell>
