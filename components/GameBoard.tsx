@@ -6,6 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { Scenario } from "@/data/scenarios";
 import { recordPlay } from "@/lib/plays";
 import { HintCard } from "./HintCard";
+import { HintMascot } from "./HintMascot";
 import { GuessInput } from "./GuessInput";
 import { ResultScreen } from "./ResultScreen";
 
@@ -80,17 +81,26 @@ export function GameBoard({ scenario, puzzleDate }: Props) {
 
   return (
     <>
-      {/* Hint panel */}
-      <div ref={hintPanelRef} className="hint-panel" role="list" aria-label="Hints">
-        {scenario.hints.map((hint) => (
-          <HintCard
-            key={hint.number}
-            hint={hint}
-            revealed={hint.number <= hintsRevealed}
-            isLatest={hint.number === hintsRevealed}
-          />
-        ))}
-      </div>
+      <section className="scenario-section" aria-labelledby="scenario-title">
+        <p className="scenario-label">{puzzleDate ? "archived scenario" : "today's scenario"}</p>
+        <div className="scenario-title-row">
+          <h1 id="scenario-title" className="scenario-title">{scenario.title}</h1>
+          <HintMascot hintsRevealed={hintsRevealed} status={status} />
+        </div>
+      </section>
+
+      <section className="hint-section" aria-label="Hints">
+        <div ref={hintPanelRef} className="hint-panel" role="list" aria-label="Hints">
+          {scenario.hints.map((hint) => (
+            <HintCard
+              key={hint.number}
+              hint={hint}
+              revealed={hint.number <= hintsRevealed}
+              isLatest={hint.number === hintsRevealed}
+            />
+          ))}
+        </div>
+      </section>
 
       {/* Input area — hidden after final submission */}
       {!submitted && (

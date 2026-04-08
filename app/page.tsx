@@ -12,8 +12,6 @@ export default function Home() {
     <div id="app">
       <Header />
       <main>
-        <p className="scenario-label">today&apos;s scenario</p>
-        <h1 className="scenario-title">{scenario.title}</h1>
         <GameBoard scenario={scenario} />
       </main>
     </div>

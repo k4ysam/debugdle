@@ -59,10 +59,6 @@ export default function PlayPage({ params }: PageProps) {
                 #{puzzleNumber} · {date}{isToday ? " · today" : " · archived"}
               </span>
             </div>
-            <p className="scenario-label">
-              {isToday ? "today's scenario" : "archived scenario"}
-            </p>
-            <h1 className="scenario-title">{scenario.title}</h1>
             <GameBoard scenario={scenario} puzzleDate={date} />
           </>
         )}
