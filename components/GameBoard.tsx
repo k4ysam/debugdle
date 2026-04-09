@@ -69,7 +69,7 @@ export function GameBoard({ scenario, puzzleDate, isHard }: Props) {
       panel.removeEventListener("transitionend", handleTransitionEnd);
       reset();
     };
-  }, [hintsRevealed]);
+  }, [hintsRevealed, submitted]);
 
   // Record play once when game ends
   useEffect(() => {
@@ -101,8 +101,8 @@ export function GameBoard({ scenario, puzzleDate, isHard }: Props) {
             <HintCard
               key={hint.number}
               hint={hint}
-              revealed={hint.number <= hintsRevealed}
-              isLatest={hint.number === hintsRevealed}
+              revealed={submitted || hint.number <= hintsRevealed}
+              isLatest={!submitted && hint.number === hintsRevealed}
             />
           ))}
         </div>
