@@ -52,6 +52,7 @@ export async function getTopStreaks(limit = 10): Promise<LeaderboardEntry[]> {
       won: row.won,
       scenario_id: "",
       hints_used: 0,
+      difficulty: "daily",
     });
     userMap.set(row.user_id, existing);
   }
