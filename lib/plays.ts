@@ -94,7 +94,7 @@ export async function getUserPlays(
   const supabase = createClient();
   const { data } = await supabase
     .from("plays")
-    .select("played_date, scenario_id, hints_used, won, created_at")
+    .select("played_date, scenario_id, hints_used, won, difficulty, created_at")
     .eq("user_id", userId)
     .order("played_date", { ascending: false })
     .limit(365);
