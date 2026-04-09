@@ -8,18 +8,18 @@ import { EditProfileForm } from "@/components/EditProfileForm";
 
 function getStreakDisplay(streak: number) {
   if (streak > 30) {
-    return { emoji: "⭐", label: `${streak} day streak` };
+    return { emoji: "⭐", label: `locked in for ${streak} days ⭐` };
   }
 
   if (streak > 10) {
-    return { emoji: "❤️‍🔥", label: `${streak} day streak` };
+    return { emoji: "❤️‍🔥", label: `locked in for ${streak} days ❤️‍🔥` };
   }
 
   if (streak > 0) {
-    return { emoji: "🔥", label: `${streak} day streak` };
+    return { emoji: "🔥", label: `locked in for ${streak} days 🔥` };
   }
 
-  return { emoji: "", label: "0 day streak" };
+  return { emoji: "", label: "not locked in yet" };
 }
 
 export function UserPanel() {
